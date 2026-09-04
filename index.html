@@ -401,8 +401,10 @@ function renderLeaderboard(){const users=Object.values(readUsers()).sort((a,b)=>
 function showToast(t){$('toast').textContent=t;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),1500)}
 function showModal(){ $('finalStars').textContent='★'.repeat(Math.min(5,Math.max(1,Math.floor(state.stars/20))))+'☆'.repeat(Math.max(0,5-Math.floor(state.stars/20)));$('finalText').textContent=`${readUsers()[currentUser]?.name||'اللاعب'} جمعت ${state.score} نقطة و${state.stars} نجمة. تم حفظ نتيجتك تلقائيًا في ترتيب اللاعبين.`;$('modal').style.display='flex';renderLeaderboard();saveUser()}
 function closeModal(){$('modal').style.display='none';state.idx=0;saveUser();loadQ()}
-$('nextBtn').onclick=next;$('skipBtn').onclick=skip;$('hintBtn').onclick=hint;
-(function init(){const s=localStorage.getItem(STORAGE_SESSION);if(s&&readUsers()[s]){currentUser=s;loadUser()}else{$('authOverlay').classList.remove('hidden');renderLeaderboard();}})();
+if(!window.supabase){
+  $('nextBtn').onclick=next;$('skipBtn').onclick=skip;$('hintBtn').onclick=hint;
+  (function init(){const s=localStorage.getItem(STORAGE_SESSION);if(s&&readUsers()[s]){currentUser=s;loadUser()}else{$('authOverlay').classList.remove('hidden');renderLeaderboard();}})();
+}
 </script>
 
 <script>
@@ -677,693 +679,1112 @@ async function installGame(){
 }
 
 window.addEventListener('beforeunload',stopQuestionTimerV5);
-bootV4();
+if(!window.supabase){
+  bootV4();
+}
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script>
 <script>
-// Final event binding: later game-engine functions override the prototype ones,
-// so the buttons must be rebound to the final implementations.
+// Dynamic delegation for game controls so they always trigger the active implementation
 (function bindFinalGameControls(){
-  if (typeof stopQuestionTimerV5 === 'function') stopQuestionTimerV5();
   const nextBtn=document.getElementById('nextBtn');
   const skipBtn=document.getElementById('skipBtn');
   const hintBtn=document.getElementById('hintBtn');
-  if(nextBtn) nextBtn.onclick=window.next;
-  if(skipBtn) skipBtn.onclick=window.skip;
-  if(hintBtn) hintBtn.onclick=window.hint;
+  if(nextBtn) nextBtn.onclick = (e) => (typeof window.next === 'function' ? window.next(e) : null);
+  if(skipBtn) skipBtn.onclick = (e) => (typeof window.skip === 'function' ? window.skip(e) : null);
+  if(hintBtn) hintBtn.onclick = (e) => (typeof window.hint === 'function' ? window.hint(e) : null);
 })();
 </script>
 
 <script>
-/* ===== Supabase online layer ===== */
-const SUPABASE_URL = "https://skgdskvlebthaqipaxvi.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JUO7Q9vbTsphfM8h-T7cPg_GMNnhh9y";
-let cloudClient = null;
-try { cloudClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY); } catch (e) { console.warn("Supabase unavailable", e); }
-function cloudEmail(name){
-  const slug = name.trim().toLowerCase().replace(/[^a-z0-9_؀-ۿ]+/g,'-').replace(/^-+|-+$/g,'').slice(0,45) || 'player';
-  return `${slug}@players.ismalfail.local`;
-}
-async function cloudEnsureProfile(user, displayName){
-  if(!cloudClient || !user) return;
-  await cloudClient.from('profiles').upsert({id:user.id, display_name:displayName},{onConflict:'id'});
-}
-async function cloudPullProfile(){
-  if(!cloudClient) return null;
-  const {data:{user}} = await cloudClient.auth.getUser();
-  if(!user) return null;
-  const {data,error}=await cloudClient.from('profiles').select('*').eq('id',user.id).maybeSingle();
-  if(error) throw error;
-  return data;
-}
-async function cloudSaveProfile(){
-  if(!cloudClient || !currentUser) return;
-  const {data:{user}}=await cloudClient.auth.getUser();
-  if(!user) return;
-  const displayName=$('playerName')?.textContent || currentUser;
-  await cloudClient.from('profiles').upsert({id:user.id,display_name:displayName,total_score:state.score,total_stars:state.stars,coins:state.coins,energy:state.energy},{onConflict:'id'});
-}
-async function cloudLeaderboard(){
-  if(!cloudClient) return null;
-  const {data,error}=await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins').order('total_score',{ascending:false}).order('total_stars',{ascending:false}).limit(10);
-  if(error) return null; return data||[];
-}
-async function renderCloudLeaderboard(){
-  const rows=await cloudLeaderboard();
-  if(!rows || !rows.length) return false;
-  $('leaderboard').innerHTML=rows.map((u,i)=>{const medal=['👑','🥈','🥉'][i]||'⭐';return `<div class="row"><span>${medal} ${i+1}. ${escapeHTML(u.display_name||'لاعب')}</span><b>${u.total_score||0}</b></div>`}).join('');
-  return true;
-}
-async function cloudRegisterOrLogin(e){
-  e.preventDefault();
-  const name=$('authName').value.trim().replace(/\s+/g,' ');
-  const pass=$('authPass').value; const msg=$('authMsg');
-  if(!cloudClient){ return window.handleAuthLocalFallback ? window.handleAuthLocalFallback(e) : null; }
-  if(name.length<2){msg.className='auth-msg err';msg.textContent='اكتب اسم لاعب صحيحًا.';return;}
-  if(pass.length<4){msg.className='auth-msg err';msg.textContent='كلمة السر يجب أن تكون 4 أحرف على الأقل.';return;}
-  const email=cloudEmail(name);
-  msg.className='auth-msg'; msg.textContent='جارٍ الاتصال...';
-  if(authMode==='register'){
-    const {data,error}=await cloudClient.auth.signUp({email,password:pass,options:{data:{display_name:name}}});
-    if(error){msg.className='auth-msg err';msg.textContent=error.message;return;}
-    if(!data.session){msg.className='auth-msg err';msg.textContent='تم إنشاء الحساب. يلزم تأكيد البريد من إعدادات Supabase أو إيقاف تأكيد البريد الإلكتروني للمشروع.';return;}
-    await cloudEnsureProfile(data.user,name); currentUser=data.user.id; localStorage.setItem(STORAGE_SESSION,data.user.id); await loadCloudUser(); showToast('تم إنشاء الحساب بنجاح 🎉');
-  }else{
-    const {data,error}=await cloudClient.auth.signInWithPassword({email,password:pass});
-    if(error){msg.className='auth-msg err';msg.textContent='اسم اللاعب أو كلمة السر غير صحيحة.';return;}
-    await cloudEnsureProfile(data.user,name); currentUser=data.user.id; localStorage.setItem(STORAGE_SESSION,data.user.id); await loadCloudUser(); showToast('مرحبًا بعودتك 👋');
-  }
-}
-async function loadCloudUser(){
-  const p=await cloudPullProfile();
-  if(!p) return;
-  state.score=p.total_score||0;state.stars=p.total_stars||0;state.coins=p.coins||0;state.energy=p.energy??25;
-  $('playerName').textContent=p.display_name;$('userBadge').textContent='حساب أونلاين';$('authOverlay').classList.add('hidden');
-  renderStages(); await renderCloudLeaderboard(); loadQ(); updateUI();
-}
-window.handleAuthLocalFallback=window.handleAuth;
-window.handleAuth=cloudRegisterOrLogin;
-const _oldLogout=window.logout;
-window.logout=async function(){try{await cloudSaveProfile(); if(cloudClient) await cloudClient.auth.signOut();}catch(e){} if(typeof _oldLogout==='function') _oldLogout();};
-setTimeout(()=>{ renderCloudLeaderboard(); if(cloudClient){cloudClient.auth.getSession().then(async ({data})=>{if(data.session){currentUser=data.session.user.id;localStorage.setItem(STORAGE_SESSION,currentUser);await loadCloudUser();}});}},50);
-</script>
-
-
-<script>
 /* ============================================================
-   Online authoritative game + admin layer (Supabase)
+   Authoritative Online Layer (Supabase + Game Engine v7)
    ============================================================ */
 (() => {
+  const SUPABASE_URL = "https://skgdskvlebthaqipaxvi.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JUO7Q9vbTsphfM8h-T7cPg_GMNnhh9y";
+  let cloudClient = null;
+  try {
+    cloudClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+  } catch (e) {
+    console.warn("Supabase client init failed:", e);
+  }
+
   const DB = window.__ismAlfailOnline = window.__ismAlfailOnline || {};
   DB.stages = [];
   DB.access = new Set();
+  DB.stageAccess = new Map();
   DB.ready = false;
   DB.adminReady = false;
   DB.seeded = false;
 
+  let reportsUsers = [];
+
   function requireCloud(){
-    if(!cloudClient) { showToast('تعذر الاتصال بقاعدة البيانات.'); return false; }
+    if(!cloudClient) {
+      if(typeof showToast === 'function') showToast('تعذر الاتصال بقاعدة البيانات.');
+      return false;
+    }
     return true;
   }
 
+  async function getAuthUser(){
+    if(!cloudClient) return null;
+    const { data: { user } } = await cloudClient.auth.getUser();
+    return user || null;
+  }
+
+  // 1. normalizeStageRow: string-safe stage_id comparison and standard question structure
   function normalizeStageRow(r, qs){
-    const questions = (qs || []).filter(q=>q.stage_id===r.id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).map(q=>({
-      id:q.id, text:q.question_text,
-      options:[q.choice_a,q.choice_b,q.choice_c,q.choice_d],
-      answer:['a','b','c','d'].indexOf(String(q.correct_choice).toLowerCase()) >= 0 ? ['a','b','c','d'].indexOf(String(q.correct_choice).toLowerCase()) : 0
-    }));
+    const questions = (qs || [])
+      .filter(q => String(q.stage_id) === String(r.id))
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      .map(q => {
+        const correctIdx = ['a', 'b', 'c', 'd'].indexOf(String(q.correct_choice || '').trim().toLowerCase());
+        return {
+          id: q.id,
+          text: q.question_text || '',
+          options: [q.choice_a || '', q.choice_b || '', q.choice_c || '', q.choice_d || ''],
+          answer: correctIdx >= 0 ? correctIdx : 0
+        };
+      });
+
     return {
-      dbId:r.id, id:String(r.id), name:r.title, description:r.description||'',
-      question_count:Math.max(1, Number(r.question_count||questions.length||1)),
-      timeLimit:Math.max(5,Math.min(600,Number(r.time_limit_seconds||60))),
-      access:r.is_free?'free':'paid', price:Number(r.price_egp||0),
-      is_active:r.is_active, questions, color:['l1','l2','l3','l4','l5','l6'][(Number(r.sort_order||1)-1)%6]
+      dbId: r.id,
+      id: String(r.id),
+      name: r.title,
+      description: r.description || '',
+      question_count: Math.max(1, Number(r.question_count || questions.length || 1)),
+      timeLimit: Math.max(5, Math.min(600, Number(r.time_limit_seconds || 60))),
+      access: r.is_free ? 'free' : 'paid',
+      price: Number(r.price_egp || 0),
+      is_active: r.is_active,
+      questions,
+      color: ['l1', 'l2', 'l3', 'l4', 'l5', 'l6'][(Number(r.sort_order || 1) - 1) % 6]
     };
   }
 
+  // 2. Fetch stages + questions + stage_access for player
   async function fetchCloudStages(){
     if(!requireCloud()) return [];
-    const {data:sr,error:se}=await cloudClient.from('stages').select('*').eq('is_active',true).order('sort_order',{ascending:true});
+    const { data: sr, error: se } = await cloudClient
+      .from('stages')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
     if(se) throw se;
-    const ids=(sr||[]).map(x=>x.id);
-    let questions=[];
+
+    const ids = (sr || []).map(x => x.id);
+    let questions = [];
     if(ids.length){
-      const {data:qr,error:qe}=await cloudClient.from('questions').select('*').in('stage_id',ids).eq('is_active',true).order('stage_id',{ascending:true}).order('sort_order',{ascending:true});
-      if(qe) throw qe; questions=qr||[];
+      const { data: qr, error: qe } = await cloudClient
+        .from('questions')
+        .select('*')
+        .in('stage_id', ids)
+        .eq('is_active', true)
+        .order('stage_id', { ascending: true })
+        .order('sort_order', { ascending: true });
+      if(qe) throw qe;
+      questions = qr || [];
     }
-    DB.stages=(sr||[]).map(r=>normalizeStageRow(r,questions));
-    const {data:{user}}=await cloudClient.auth.getUser();
-    DB.access=new Set();
+
+    DB.stages = (sr || []).map(r => normalizeStageRow(r, questions));
+
+    const { data: { user } } = await cloudClient.auth.getUser();
+    DB.access = new Set();
+    DB.stageAccess = new Map();
+
     if(user && ids.length){
-      const {data:ar,error:ae}=await cloudClient.from('stage_access').select('stage_id').eq('player_id',user.id);
-      if(!ae) (ar||[]).forEach(x=>DB.access.add(String(x.stage_id)));
+      const { data: ar, error: ae } = await cloudClient
+        .from('stage_access')
+        .select('stage_id, attempts_used, max_attempts, granted_by_admin, paid')
+        .eq('player_id', user.id);
+      if(!ae && ar){
+        ar.forEach(x => {
+          const sid = String(x.stage_id);
+          DB.access.add(sid);
+          DB.stageAccess.set(sid, {
+            attemptsUsed: Number(x.attempts_used || 0),
+            maxAttempts: Number(x.max_attempts || 1),
+            grantedByAdmin: !!x.granted_by_admin,
+            paid: !!x.paid
+          });
+        });
+      }
     }
-    DB.ready=true;
-    gameConfigV4={stages:DB.stages};
+
+    DB.ready = true;
+    if(typeof gameConfigV4 !== 'undefined') gameConfigV4 = { stages: DB.stages };
     return DB.stages;
   }
 
+  // Helper to seed initial game if database empty (admin only)
   async function seedInitialGameIfEmpty(){
     if(!cloudClient || !adminLoggedV4) return;
-    const {data:existing,error:ee}=await cloudClient.from('stages').select('*').order('sort_order',{ascending:true});
+    const { data: existing, error: ee } = await cloudClient.from('stages').select('*').order('sort_order', { ascending: true });
     if(ee) throw ee;
-    const local=readConfigV4();
-    const legacyOnly = (existing||[]).length===1 && existing[0].title==='المرحلة الأولى';
-    const legacyNeedsSeed = legacyOnly && Number(existing[0].question_count||0)>0 && ((await cloudClient.from('questions').select('id',{count:'exact',head:true}).eq('stage_id',existing[0].id)).count||0)===0;
-    if((existing||[]).length===0 || legacyNeedsSeed){
-      let inserted=[];
+    const local = typeof readConfigV4 === 'function' ? readConfigV4() : null;
+    if(!local || !local.stages) return;
+    const legacyOnly = (existing || []).length === 1 && existing[0].title === 'المرحلة الأولى';
+    const legacyNeedsSeed = legacyOnly && Number(existing[0].question_count || 0) > 0 && ((await cloudClient.from('questions').select('id', { count: 'exact', head: true }).eq('stage_id', existing[0].id)).count || 0) === 0;
+    if((existing || []).length === 0 || legacyNeedsSeed){
+      let inserted = [];
       if(legacyNeedsSeed){
-        await cloudClient.from('questions').delete().eq('stage_id',existing[0].id);
-        const first=local.stages[0];
-        const firstUpdate={title:first.name,description:'',sort_order:1,question_count:first.questions.length,time_limit_seconds:Number(first.timeLimit||60),is_free:true,price_egp:0,is_active:true};
-        const {data:up,error:ue}=await cloudClient.from('stages').update(firstUpdate).eq('id',existing[0].id).select('*').single();if(ue)throw ue;
-        inserted=[up];
+        await cloudClient.from('questions').delete().eq('stage_id', existing[0].id);
+        const first = local.stages[0];
+        const firstUpdate = { title: first.name, description: '', sort_order: 1, question_count: first.questions.length, time_limit_seconds: Number(first.timeLimit || 60), is_free: true, price_egp: 0, is_active: true };
+        const { data: up, error: ue } = await cloudClient.from('stages').update(firstUpdate).eq('id', existing[0].id).select('*').single();
+        if(ue) throw ue;
+        inserted = [up];
       }
-      const startIndex=legacyNeedsSeed?1:0;
-      const rows=local.stages.slice(startIndex).map((st,i)=>({
-        title:st.name, description:'', sort_order:startIndex+i+1,
-        question_count:Math.max(1,st.questions.length||10), time_limit_seconds:Number(st.timeLimit||60),
-        is_free:st.access==='free', price_egp:Number(st.price||0), is_active:true
+      const startIndex = legacyNeedsSeed ? 1 : 0;
+      const rows = local.stages.slice(startIndex).map((st, i) => ({
+        title: st.name, description: '', sort_order: startIndex + i + 1,
+        question_count: Math.max(1, st.questions.length || 10), time_limit_seconds: Number(st.timeLimit || 60),
+        is_free: st.access === 'free', price_egp: Number(st.price || 0), is_active: true
       }));
-      if(rows.length){const {data:add,error:ae}=await cloudClient.from('stages').insert(rows).select('*');if(ae)throw ae;inserted=inserted.concat(add||[]);}
-      for(let i=0;i<inserted.length;i++){
-        const localIndex=legacyNeedsSeed?i:(startIndex+i); const source=local.stages[localIndex];
-        const qs=(source.questions||[]).map((q,j)=>({stage_id:inserted[i].id,question_text:q.text,choice_a:q.options?.[0]||'',choice_b:q.options?.[1]||'',choice_c:q.options?.[2]||'',choice_d:q.options?.[3]||'',correct_choice:['a','b','c','d'][Number(q.answer)||0],explanation:'',sort_order:j+1,is_active:true}));
-        if(qs.length){const {error:qe}=await cloudClient.from('questions').insert(qs);if(qe)throw qe;}
+      if(rows.length){
+        const { data: add, error: ae } = await cloudClient.from('stages').insert(rows).select('*');
+        if(ae) throw ae;
+        inserted = inserted.concat(add || []);
       }
-      DB.seeded=true; await fetchCloudStages(); showToast('تم تجهيز محتوى اللعبة الأولي على قاعدة البيانات ✅');
+      for(let i = 0; i < inserted.length; i++){
+        const localIndex = legacyNeedsSeed ? i : (startIndex + i);
+        const source = local.stages[localIndex];
+        const qs = (source.questions || []).map((q, j) => ({
+          stage_id: inserted[i].id, question_text: q.text,
+          choice_a: q.options?.[0] || '', choice_b: q.options?.[1] || '',
+          choice_c: q.options?.[2] || '', choice_d: q.options?.[3] || '',
+          correct_choice: ['a', 'b', 'c', 'd'][Number(q.answer) || 0],
+          explanation: '', sort_order: j + 1, is_active: true
+        }));
+        if(qs.length){
+          const { error: qe } = await cloudClient.from('questions').insert(qs);
+          if(qe) throw qe;
+        }
+      }
+      DB.seeded = true;
+      await fetchCloudStages();
+      if(typeof showToast === 'function') showToast('تم تجهيز محتوى اللعبة الأولي على قاعدة البيانات ✅');
     }
   }
 
-  function currentStageOnline(){return DB.stages[state.stageIndex||0] || DB.stages[0];}
+  function currentStageOnline(){
+    return DB.stages[state.stageIndex || 0] || DB.stages[0];
+  }
+
+  // 3. userCanAccessOnline: handles free, admin, locked, unlocked, and attempt-used states
   function userCanAccessOnline(i){
-    const st=DB.stages[i]; if(!st) return false;
-    if(i===0 || st.access==='free') return true;
-    if(adminLoggedV4) return true;
-    return DB.access.has(String(st.dbId));
+    const st = DB.stages[i];
+    if(!st) return false;
+    if(st.access === 'free' || i === 0) return true;
+    if(typeof adminLoggedV4 !== 'undefined' && adminLoggedV4) return true;
+    const acc = DB.stageAccess?.get(String(st.dbId));
+    if(!acc) return false;
+    return acc.attemptsUsed < acc.maxAttempts;
   }
 
-  window.renderStages = function(){
-    const list=DB.stages||[];
-    if(!list.length){$('levels').innerHTML='<div class="empty-rank">لا توجد مراحل منشورة حاليًا.</div>';return;}
-    const idx=state.stageIndex||0;
-    $('levels').innerHTML=list.map((st,i)=>{
-      const access=userCanAccessOnline(i);
-      const count=Math.max(1,Math.min(st.question_count||st.questions.length||1,st.questions.length||st.question_count||1));
-      const progress=i<idx?100:i===idx?Math.min(99,Math.round(((state.questionIndex||0)/Math.max(1,count))*100)):0;
-      const badge=st.access==='free'?'<span class="free-badge">مجاني</span>':(access?'<span class="free-badge">تم الفتح</span>':`<span class="lock-badge">🔒 ${Number(st.price||0).toLocaleString('ar-EG')} جنيه</span>`);
-      return `<button class="level ${st.color||'l1'} ${access?'':'stage-lock'}" onclick="setStage(${i})"><div>${i+1}. ${escapeHTML(st.name)}</div><div style="opacity:.9;font-size:13px">${count} سؤالًا • ⏱️ ${st.timeLimit}ث</div>${badge}<div class="progress"><i style="width:${progress}%"></i></div></button>`;
-    }).join('');
-  };
-
-  window.setStage = async function(i){
-    if(!userCanAccessOnline(i)){showToast(`🔒 المرحلة مغلقة — السعر ${Number(DB.stages[i]?.price||0).toLocaleString('ar-EG')} جنيه`);return;}
-    stopQuestionTimerV5();
-    state.stageIndex=i;state.questionIndex=0;state.idx=0;state.answered=false;
-    await saveOnlineProgress(); renderStages(); loadQ(); showToast(`انتقلت إلى: ${DB.stages[i].name}`);
-  };
-
-  window.loadQ = function(){
-    stopQuestionTimerV5();
-    const st=currentStageOnline();
-    if(!st || !st.questions.length){
-      $('questionText').textContent='لا توجد أسئلة منشورة في هذه المرحلة حاليًا.';$('choices').innerHTML='';$('nextBtn').disabled=true;if($('timerBox')){$('timerNumber').textContent='—';$('timerBar').style.width='0%';}return;
+  // Stage attempt RPC wrappers
+  async function startStageAttempt(stageId){
+    const u = await getAuthUser();
+    if(!u) return null;
+    const { data, error } = await cloudClient.rpc('start_stage_attempt', { p_stage_id: stageId });
+    if(error){
+      if(typeof showToast === 'function') showToast(error.message || 'تعذر بدء المحاولة.');
+      return null;
     }
-    const limit=Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length);
-    const qi=(state.questionIndex||0)%limit; const q=st.questions[qi];
-    state.current=[q.text,...q.options]; state.currentQuestionId=q.id; state.currentAttemptId=crypto.randomUUID ? crypto.randomUUID() : ('00000000-0000-4000-8000-'+String(Date.now()).padStart(12,'0'));
-    state.answered=false; questionTimedOutV5=false;
-    $('stageTitle').textContent=`${st.name} • ⏱️ ${st.timeLimit}ث`;$('qNum').textContent=`${qi+1} / ${limit}`;$('questionText').textContent=q.text;$('feedback').className='feedback';$('feedback').textContent='';$('nextBtn').disabled=true;
-    const opts=shuffle(q.options.map((x,i)=>({text:x,correct:i===q.answer})));
-    $('choices').innerHTML=opts.map((o,i)=>`<button class="choice" data-answer-index="${o.correct?Array.from(q.options).indexOf(o.text):-1}" data-correct="${o.correct}" onclick="answer(this)">${['أ','ب','ج','د'][i]}) ${escapeHTML(o.text)}</button>`).join('');
-    resetQuestionTimerV5();
-  };
-
-  async function recordAnswerOnline(questionId, selectedIndex, elapsed){
-    if(!cloudClient || !currentUser) return null;
-    const choice=['a','b','c','d'][Math.max(0,Math.min(3,Number(selectedIndex)||0))];
-    const {data,error}=await cloudClient.rpc('record_game_answer',{
-      p_attempt_id:state.currentAttemptId, p_question_id:questionId,
-      p_selected_choice:choice, p_elapsed_seconds:Number(elapsed.toFixed(3))
-    });
-    if(error){ console.warn('record_game_answer',error); return null; }
     return data;
   }
 
+  async function finishStageAttempt(){
+    if(!state.currentAttemptId || !cloudClient) return;
+    const { error } = await cloudClient.rpc('finish_stage_attempt', { p_attempt_id: state.currentAttemptId });
+    if(error) console.warn('finish_stage_attempt error:', error);
+  }
+
+  // 4. renderStages: shows correct badges for free, admin, paid, and attempt-used states
+  window.renderStages = function(){
+    const list = DB.stages || [];
+    if(!list.length){
+      if($('levels')) $('levels').innerHTML = '<div class="empty-rank">لا توجد مراحل منشورة حاليًا.</div>';
+      return;
+    }
+    const idx = state.stageIndex || 0;
+    if($('levels')) {
+      $('levels').innerHTML = list.map((st, i) => {
+        const isFree = (st.access === 'free' || i === 0);
+        const acc = DB.stageAccess?.get(String(st.dbId));
+        const hasUsedAttempt = acc && (acc.attemptsUsed >= acc.maxAttempts);
+        const can = userCanAccessOnline(i);
+        const count = Math.max(1, Math.min(st.question_count || st.questions.length || 1, st.questions.length || st.question_count || 1));
+        const progress = i < idx ? 100 : i === idx ? Math.min(99, Math.round(((state.questionIndex || 0) / Math.max(1, count)) * 100)) : 0;
+
+        let badge;
+        if(isFree){
+          badge = '<span class="free-badge">مجاني</span>';
+        } else if(typeof adminLoggedV4 !== 'undefined' && adminLoggedV4){
+          badge = '<span class="free-badge">مدير</span>';
+        } else if(hasUsedAttempt){
+          badge = '<span class="lock-badge">✅ استُخدمت المحاولة</span>';
+        } else if(can){
+          badge = '<span class="free-badge">تم الفتح</span>';
+        } else {
+          badge = `<span class="lock-badge">🔒 ${Number(st.price || 0).toLocaleString('ar-EG')} جنيه</span>`;
+        }
+
+        return `<button class="level ${st.color || 'l1'} ${can ? '' : 'stage-lock'}" onclick="setStage(${i})">
+          <div>${i + 1}. ${escapeHTML(st.name)}</div>
+          <div style="opacity:.9;font-size:13px">${count} سؤالًا • ⏱️ ${st.timeLimit}ث</div>
+          ${badge}
+          <div class="progress"><i style="width:${progress}%"></i></div>
+        </button>`;
+      }).join('');
+    }
+  };
+
+  // 5. setStage: starts or resumes stage attempt ONCE, sets state.currentAttemptId
+  window.setStage = async function(i){
+    const st = DB.stages?.[i];
+    if(!st) return;
+    if(st.access !== 'free' && i !== 0 && !(typeof adminLoggedV4 !== 'undefined' && adminLoggedV4)){
+      const acc = DB.stageAccess?.get(String(st.dbId));
+      if(!acc){
+        showToast(`🔒 المرحلة مغلقة — السعر ${Number(st.price || 0).toLocaleString('ar-EG')} جنيه`);
+        return;
+      }
+      if(acc.attemptsUsed >= acc.maxAttempts){
+        showToast('✅ استُخدمت المحاولة المسموحة لهذه المرحلة. تواصل مع المدير لمنحك محاولة جديدة.');
+        return;
+      }
+    }
+
+    if(typeof stopQuestionTimerV5 === 'function') stopQuestionTimerV5();
+    const start = await startStageAttempt(st.dbId);
+    if(!start) return;
+
+    state.stageIndex = i;
+    state.questionIndex = 0;
+    state.idx = 0;
+    state.answered = false;
+    state.currentAttemptId = start.attempt_id || start.id;
+
+    await saveOnlineProgress();
+    renderStages();
+    loadQ();
+    showToast(start.resumed ? `تم استكمال محاولة «${st.name}»` : `بدأت المحاولة المسموح بها في «${st.name}»`);
+  };
+
+  // 6. loadQ: renders questions using persistent attempt_id, NEVER creates randomUUID attemptId per question!
+  window.loadQ = async function(){
+    if(typeof stopQuestionTimerV5 === 'function') stopQuestionTimerV5();
+    const st = currentStageOnline();
+    if(!st || !st.questions || !st.questions.length){
+      if($('questionText')) $('questionText').textContent = 'لا توجد أسئلة منشورة في هذه المرحلة حاليًا.';
+      if($('choices')) $('choices').innerHTML = '';
+      if($('nextBtn')) $('nextBtn').disabled = true;
+      if($('timerBox')){ $('timerNumber').textContent = '—'; $('timerBar').style.width = '0%'; }
+      return;
+    }
+
+    if(!state.currentAttemptId){
+      const start = await startStageAttempt(st.dbId);
+      if(!start){
+        if($('questionText')) $('questionText').textContent = 'تعذر بدء المحاولة لهذه المرحلة. قد تكون استُنفدت المحاولة أو حدث خطأ في الاتصال.';
+        if($('choices')) $('choices').innerHTML = '';
+        if($('nextBtn')) $('nextBtn').disabled = true;
+        return;
+      }
+      state.currentAttemptId = start.attempt_id || start.id;
+    }
+
+    const limit = Math.min(Math.max(1, Number(st.question_count || st.questions.length)), st.questions.length);
+    const qi = (state.questionIndex || 0) % limit;
+    const q = st.questions[qi];
+    state.current = [q.text, ...q.options];
+    state.currentQuestionId = q.id;
+    state.answered = false;
+    questionTimedOutV5 = false;
+
+    if($('stageTitle')) $('stageTitle').textContent = `${st.name} • ⏱️ ${st.timeLimit}ث`;
+    if($('qNum')) $('qNum').textContent = `${qi + 1} / ${limit}`;
+    if($('questionText')) $('questionText').textContent = q.text;
+    if($('feedback')){ $('feedback').className = 'feedback'; $('feedback').textContent = ''; }
+    if($('nextBtn')) $('nextBtn').disabled = true;
+
+    const opts = shuffle(q.options.map((x, idx) => ({ text: x, correct: idx === q.answer, index: idx })));
+    if($('choices')) {
+      $('choices').innerHTML = opts.map((o, idx) => `<button class="choice" data-answer-index="${o.index}" data-correct="${o.correct}" onclick="answer(this)">${['أ','ب','ج','د'][idx]}) ${escapeHTML(o.text)}</button>`).join('');
+    }
+    if(typeof resetQuestionTimerV5 === 'function') resetQuestionTimerV5();
+  };
+
+  // 7. recordAnswerOnline: sends answer with persistent attempt_id
+  async function recordAnswerOnline(questionId, selectedIndex, elapsed){
+    if(!cloudClient || !currentUser || !state.currentAttemptId) return null;
+    const choice = (selectedIndex === null || selectedIndex === undefined)
+      ? null
+      : ['a', 'b', 'c', 'd'][Math.max(0, Math.min(3, Number(selectedIndex) || 0))];
+    const { data, error } = await cloudClient.rpc('record_game_answer', {
+      p_attempt_id: state.currentAttemptId,
+      p_question_id: questionId,
+      p_selected_choice: choice,
+      p_elapsed_seconds: Number(Math.max(0, elapsed).toFixed(3))
+    });
+    if(error){ console.warn('record_game_answer error:', error); return null; }
+    return data;
+  }
+
+  // 8. answer: evaluates answer and records via RPC
   window.answer = async function(el){
-    if(state.answered||questionTimedOutV5)return;
-    const elapsed=(Date.now()-questionStartedAtV5)/1000; const limit=getCurrentQuestionTimeV5();
-    if(elapsed>=limit){timeoutQuestionV5();return;}
-    stopQuestionTimerV5(); state.answered=true; $('nextBtn').disabled=false;
-    const selected=Number(el.dataset.answerIndex||0);
-    document.querySelectorAll('.choice').forEach(b=>{b.classList.add('disabled');if(b.dataset.correct==='true')b.classList.add('correct')});
-    const result=await recordAnswerOnline(state.currentQuestionId,selected,elapsed);
-    const correct=el.dataset.correct==='true';
+    if(state.answered || questionTimedOutV5) return;
+    const elapsed = (Date.now() - questionStartedAtV5) / 1000;
+    const limit = typeof getCurrentQuestionTimeV5 === 'function' ? getCurrentQuestionTimeV5() : 60;
+    if(elapsed >= limit){ await window.timeoutQuestionV6(); return; }
+
+    if(typeof stopQuestionTimerV5 === 'function') stopQuestionTimerV5();
+    state.answered = true;
+    if($('nextBtn')) $('nextBtn').disabled = false;
+    const selected = Number(el.dataset.answerIndex);
+    document.querySelectorAll('.choice').forEach(b => {
+      b.classList.add('disabled');
+      if(b.dataset.correct === 'true') b.classList.add('correct');
+    });
+
+    const result = await recordAnswerOnline(state.currentQuestionId, selected, elapsed);
+    const correct = el.dataset.correct === 'true';
+
+    if(!result){
+      if(correct){
+        el.classList.add('correct');
+        const earned = elapsed <= 30 ? 2 : 1;
+        state.score += earned; state.stars += earned; state.coins += earned; state.streak++;
+        showFeedback(true, `إجابة صحيحة! حصلت على <b>${earned}</b> نقطة.`);
+      } else {
+        el.classList.add('wrong');
+        state.energy = Math.max(0, state.energy - 1);
+        state.streak = 0;
+        showFeedback(false, 'ليست الإجابة الصحيحة. حصلت على 0 نقطة.');
+      }
+    } else {
+      state.score = Number(result.score ?? state.score);
+      state.stars = Number(result.stars ?? state.stars);
+      state.coins = Number(result.coins ?? state.coins);
+      if(result.correct){
+        el.classList.add('correct');
+        const earned = Number(result.points || 0);
+        state.streak++;
+        showFeedback(true, `إجابة صحيحة! حصلت على <b>${earned}</b> نقطة لأنك أجبت خلال ${Math.floor(elapsed)} ثانية.`);
+      } else {
+        el.classList.add('wrong');
+        state.energy = Math.max(0, state.energy - 1);
+        state.streak = 0;
+        showFeedback(false, 'ليست الإجابة الصحيحة. حصلت على 0 نقطة. راجع القاعدة وحاول في السؤال التالي.');
+      }
+    }
+
+    await saveOnlineProgress();
+    renderStages();
+    renderLeaderboard();
+    updateUI();
+  };
+
+  // 9. timeoutQuestion: handles timer expiration
+  window.timeoutQuestionV6 = async function(){
+    if(state.answered || questionTimedOutV5) return;
+    questionTimedOutV5 = true;
+    state.answered = true;
+    if(typeof stopQuestionTimerV5 === 'function') stopQuestionTimerV5();
+    if($('nextBtn')) $('nextBtn').disabled = true;
+    const limit = typeof getCurrentQuestionTimeV5 === 'function' ? getCurrentQuestionTimeV5() : 60;
+    const result = await recordAnswerOnline(state.currentQuestionId, null, limit);
     if(result){
-      state.score=Number(result.score??state.score);state.stars=Number(result.stars??state.stars);state.coins=Number(result.coins??state.coins);
-      if(result.correct){el.classList.add('correct');const earned=Number(result.points||0);state.streak++;showFeedback(true,`إجابة صحيحة! حصلت على <b>${earned}</b> نقطة لأنك أجبت خلال ${Math.floor(elapsed)} ثانية.`);}else{el.classList.add('wrong');state.energy=Math.max(0,state.energy-1);state.streak=0;showFeedback(false,'ليست الإجابة الصحيحة. حصلت على 0 نقطة. راجع القاعدة وحاول في السؤال التالي.');}
-    }else if(correct){
-      el.classList.add('correct'); state.score+=elapsed<=30?2:1; state.stars+=elapsed<=30?2:1; state.coins+=elapsed<=30?2:1; state.streak++; showFeedback(true,`إجابة صحيحة! حصلت على <b>${elapsed<=30?2:1}</b> نقطة.`);
-    }else{el.classList.add('wrong');state.energy=Math.max(0,state.energy-1);state.streak=0;showFeedback(false,'ليست الإجابة الصحيحة. حصلت على 0 نقطة.');}
-    await saveOnlineProgress(); renderStages(); renderLeaderboard(); updateUI();
+      state.score = Number(result.score ?? state.score);
+      state.stars = Number(result.stars ?? state.stars);
+      state.coins = Number(result.coins ?? state.coins);
+    }
+    state.streak = 0;
+    state.energy = Math.max(0, state.energy - 1);
+    document.querySelectorAll('.choice').forEach(b => {
+      b.classList.add('disabled');
+      if(b.dataset.correct === 'true') b.classList.add('correct');
+    });
+    showFeedback(false, '⏰ انتهى الوقت! اعتُبر السؤال خطأ.');
+    await saveOnlineProgress();
+    renderLeaderboard();
+    updateUI();
+
+    setTimeout(async () => {
+      const st = currentStageOnline();
+      const qLimit = st ? Math.min(Math.max(1, Number(st.question_count || st.questions.length)), st.questions.length) : 1;
+      state.questionIndex = (state.questionIndex || 0) + 1;
+      if(state.questionIndex >= qLimit){
+        await finishStageAttempt();
+        state.currentAttemptId = null;
+        state.questionIndex = 0;
+        await saveOnlineProgress();
+        await fetchCloudStages();
+        renderStages();
+        showStageCompleteV4();
+      } else {
+        renderStages();
+        loadQ();
+      }
+    }, 1200);
   };
 
+  // 10. next: advances question or finishes stage attempt
   window.next = async function(){
-    stopQuestionTimerV5();
-    const st=currentStageOnline(); if(!st)return;
-    const limit=Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length);
-    state.questionIndex=(state.questionIndex||0)+1; await saveOnlineProgress();
-    if(state.questionIndex>=limit){state.questionIndex=0;await saveOnlineProgress();showStageCompleteV4();}
-    else{renderStages();loadQ();}
+    if(typeof stopQuestionTimerV5 === 'function') stopQuestionTimerV5();
+    const st = currentStageOnline();
+    if(!st) return;
+    const limit = Math.min(Math.max(1, Number(st.question_count || st.questions.length)), st.questions.length);
+    state.questionIndex = (state.questionIndex || 0) + 1;
+    await saveOnlineProgress();
+    if(state.questionIndex >= limit){
+      await finishStageAttempt();
+      state.currentAttemptId = null;
+      state.questionIndex = 0;
+      await saveOnlineProgress();
+      await fetchCloudStages();
+      renderStages();
+      showStageCompleteV4();
+      return;
+    }
+    renderStages();
+    loadQ();
   };
 
+  // 11. skip: skips question
   window.skip = async function(){
-    stopQuestionTimerV5(); state.streak=0; state.questionIndex=(state.questionIndex||0)+1; await saveOnlineProgress();
-    const st=currentStageOnline(); const limit=st?Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length):1;
-    if(state.questionIndex>=limit){state.questionIndex=0;showStageCompleteV4();} else {loadQ();} showToast('تم تخطي السؤال');
+    if(typeof stopQuestionTimerV5 === 'function') stopQuestionTimerV5();
+    state.streak = 0;
+    const st = currentStageOnline();
+    const limit = st ? Math.min(Math.max(1, Number(st.question_count || st.questions.length)), st.questions.length) : 1;
+    state.questionIndex = (state.questionIndex || 0) + 1;
+    await saveOnlineProgress();
+    if(state.questionIndex >= limit){
+      await finishStageAttempt();
+      state.currentAttemptId = null;
+      state.questionIndex = 0;
+      await saveOnlineProgress();
+      await fetchCloudStages();
+      renderStages();
+      showStageCompleteV4();
+    } else {
+      loadQ();
+    }
+    showToast('تم تخطي السؤال');
   };
 
+  // 12. closeModal: handles modal closing
+  window.closeModal = async function(){
+    if($('modal')) $('modal').style.display = 'none';
+    const current = state.stageIndex || 0;
+    const nextIndex = DB.stages.findIndex((_, idx) => idx > current && userCanAccessOnline(idx));
+    if(nextIndex >= 0){
+      await window.setStage(nextIndex);
+    } else {
+      state.currentAttemptId = null;
+      renderStages();
+      if($('questionText')) $('questionText').textContent = 'اختر مرحلة أخرى من القائمة لبدء تدريب جديد.';
+      if($('choices')) $('choices').innerHTML = '';
+      if($('nextBtn')) $('nextBtn').disabled = true;
+      if($('timerBox')){ $('timerNumber').textContent = '—'; $('timerBar').style.width = '0%'; }
+    }
+  };
+
+  // 13. Leaderboard
   window.renderLeaderboard = async function(){
-    if(!cloudClient){return;}
-    const {data,error}=await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins').order('total_score',{ascending:false}).order('total_stars',{ascending:false}).limit(10);
-    if(error){console.warn(error);return;}
-    $('leaderboard').innerHTML=(data||[]).map((u,i)=>{const medal=['👑','🥈','🥉'][i]||'⭐';const me=currentUser===u.id;return `<div class="row ${me?'today rank-me':''}"><span>${medal} ${i+1}. ${escapeHTML(u.display_name||'لاعب')}${me?' <span class="me-badge">أنت</span>':''}</span><b>${Number(u.total_score||0)}</b></div>`;}).join('')||'<div class="empty-rank">لا يوجد لاعبين بعد.</div>';
+    if(!cloudClient) return;
+    const { data, error } = await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins').order('total_score', { ascending: false }).order('total_stars', { ascending: false }).limit(10);
+    if(error){ console.warn(error); return; }
+    if($('leaderboard')) {
+      $('leaderboard').innerHTML = (data || []).map((u, i) => {
+        const medal = ['👑', '🥈', '🥉'][i] || '⭐';
+        const me = currentUser === u.id;
+        return `<div class="row ${me ? 'today rank-me' : ''}"><span>${medal} ${i + 1}. ${escapeHTML(u.display_name || 'لاعب')}${me ? ' <span class="me-badge">أنت</span>' : ''}</span><b>${Number(u.total_score || 0)}</b></div>`;
+      }).join('') || '<div class="empty-rank">لا يوجد لاعبين بعد.</div>';
+    }
   };
 
+  // 14. Online progress saver
   async function saveOnlineProgress(){
-    if(!cloudClient || !currentUser)return;
-    const {data:{user}}=await cloudClient.auth.getUser(); if(!user)return;
-    const st=currentStageOnline(); if(!st)return;
-    const limit=Math.min(Math.max(1,Number(st.question_count||st.questions.length||1)),st.questions.length||1);
-    const {error}=await cloudClient.from('player_stage_progress').upsert({
-      player_id:user.id,stage_id:st.dbId,current_question:Number(state.questionIndex||0),
-      best_score:Number(state.score||0),stars:Number(state.stars||0),completed:false,updated_at:new Date().toISOString()
-    },{onConflict:'player_id,stage_id'});
-    if(error) console.warn('progress save',error);
-    $('scoreText').textContent=state.score; $('stars').textContent=state.stars; $('coins').textContent=state.coins;
+    if(!cloudClient || !currentUser) return;
+    const { data: { user } } = await cloudClient.auth.getUser();
+    if(!user) return;
+    const st = currentStageOnline();
+    if(!st) return;
+    const { error } = await cloudClient.from('player_stage_progress').upsert({
+      player_id: user.id,
+      stage_id: st.dbId,
+      current_question: Number(state.questionIndex || 0),
+      best_score: Number(state.score || 0),
+      stars: Number(state.stars || 0),
+      completed: false,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'player_id,stage_id' });
+    if(error) console.warn('progress save error:', error);
+    if($('scoreText')) $('scoreText').textContent = state.score;
+    if($('stars')) $('stars').textContent = state.stars;
+    if($('coins')) $('coins').textContent = state.coins;
   }
 
+  // 15. Student profile loader
   async function cloudLoadStudentState(){
-    if(!cloudClient)return;
-    const {data:{user}}=await cloudClient.auth.getUser();if(!user)return;
-    const {data:profile,error:pe}=await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins').eq('id',user.id).maybeSingle();if(pe)throw pe;
-    if(!profile)return;
-    state.score=Number(profile.total_score||0);state.stars=Number(profile.total_stars||0);state.coins=Number(profile.coins||0);state.energy=25;currentUser=user.id;
-    const {data:prog}=await cloudClient.from('player_stage_progress').select('stage_id,current_question').eq('player_id',user.id);
-    const currentByStage=new Map((prog||[]).map(x=>[String(x.stage_id),Number(x.current_question||0)]));
-    const start=Number(localStorage.getItem('ismAlfailLastStage')||0);
-    state.stageIndex=Math.min(start,Math.max(0,DB.stages.length-1));
-    const cs=DB.stages[state.stageIndex]; state.questionIndex=cs?currentByStage.get(String(cs.dbId))||0:0;
-    $('playerName').textContent=profile.display_name;$('userBadge').textContent='حساب أونلاين';$('authOverlay').classList.add('hidden');
-    await fetchCloudStages(); renderStages(); await renderLeaderboard(); loadQ(); updateUI();
+    if(!cloudClient) return;
+    const { data: { user } } = await cloudClient.auth.getUser();
+    if(!user) return;
+    const { data: profile, error: pe } = await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins,role').eq('id', user.id).maybeSingle();
+    if(pe) throw pe;
+    if(!profile) return;
+
+    state.score = Number(profile.total_score || 0);
+    state.stars = Number(profile.total_stars || 0);
+    state.coins = Number(profile.coins || 0);
+    state.energy = 25;
+    currentUser = user.id;
+    adminLoggedV4 = (profile.role === 'admin');
+
+    if($('playerName')) $('playerName').textContent = profile.display_name;
+    if($('userBadge')) $('userBadge').textContent = adminLoggedV4 ? 'حساب مدير' : 'حساب أونلاين';
+    if($('authOverlay')) $('authOverlay').classList.add('hidden');
+
+    await fetchCloudStages();
+    renderStages();
+    await renderLeaderboard();
+    state.stageIndex = 0;
+    state.questionIndex = 0;
+    state.currentAttemptId = null;
+    loadQ();
+    updateUI();
   }
 
-  // Save current stage locally only as a convenience; authoritative data is in Supabase.
-  const oldSetStage = window.setStage;
-  const _oldLoadQ=window.loadQ;
-
+  // 16. Admin Panel Functions
   window.openAdmin = async function(){
-    $('adminOverlay').style.display='flex';adminLoggedV4=false;
-    $('adminLoginView').classList.remove('hidden');$('adminPanelView').classList.add('hidden');
-    $('adminLoginMsg').className='auth-msg';$('adminLoginMsg').textContent='';
-    if(!cloudClient)return;
-    try{
-      const {data:{session}}=await cloudClient.auth.getSession();
-      if(session?.user){const {data:p}=await cloudClient.from('profiles').select('display_name,role').eq('id',session.user.id).maybeSingle();if(p?.role==='admin'){adminLoggedV4=true;await showOnlineAdminPanel();}}
-    }catch(e){console.warn(e)}
+    if($('adminOverlay')) $('adminOverlay').style.display = 'flex';
+    adminLoggedV4 = false;
+    if($('adminLoginView')) $('adminLoginView').classList.remove('hidden');
+    if($('adminPanelView')) $('adminPanelView').classList.add('hidden');
+    if($('adminLoginMsg')){ $('adminLoginMsg').className = 'auth-msg'; $('adminLoginMsg').textContent = ''; }
+    if(!cloudClient) return;
+    try {
+      const { data: { session } } = await cloudClient.auth.getSession();
+      if(session?.user){
+        const { data: p } = await cloudClient.from('profiles').select('display_name,role').eq('id', session.user.id).maybeSingle();
+        if(p?.role === 'admin'){
+          adminLoggedV4 = true;
+          await showOnlineAdminPanel();
+        }
+      }
+    } catch(e) { console.warn(e); }
   };
 
   window.adminLogin = async function(e){
-    e.preventDefault(); const email=$('adminUser').value.trim(), pass=$('adminPass').value, msg=$('adminLoginMsg');
-    if(!cloudClient){msg.className='auth-msg err';msg.textContent='اتصال قاعدة البيانات غير متاح.';return;}
-    msg.className='auth-msg';msg.textContent='جارٍ التحقق...';
-    const {data,error}=await cloudClient.auth.signInWithPassword({email,password:pass});
-    if(error||!data?.user){msg.className='auth-msg err';msg.textContent='بيانات الدخول غير صحيحة.';return;}
-    const {data:profile}=await cloudClient.from('profiles').select('display_name,role').eq('id',data.user.id).maybeSingle();
-    if(profile?.role!=='admin'){await cloudClient.auth.signOut();msg.className='auth-msg err';msg.textContent='هذا الحساب لا يملك صلاحية المدير.';return;}
-    adminLoggedV4=true; msg.className='auth-msg ok';msg.textContent='تم التحقق.'; await showOnlineAdminPanel(); showToast('تم دخول لوحة المدير 🔐');
+    e.preventDefault();
+    const email = $('adminUser').value.trim(), pass = $('adminPass').value, msg = $('adminLoginMsg');
+    if(!cloudClient){ msg.className = 'auth-msg err'; msg.textContent = 'اتصال قاعدة البيانات غير متاح.'; return; }
+    msg.className = 'auth-msg'; msg.textContent = 'جارٍ التحقق...';
+    const { data, error } = await cloudClient.auth.signInWithPassword({ email, password: pass });
+    if(error || !data?.user){ msg.className = 'auth-msg err'; msg.textContent = 'بيانات الدخول غير صحيحة.'; return; }
+    const { data: profile } = await cloudClient.from('profiles').select('display_name,role').eq('id', data.user.id).maybeSingle();
+    if(profile?.role !== 'admin'){
+      await cloudClient.auth.signOut();
+      msg.className = 'auth-msg err'; msg.textContent = 'هذا الحساب لا يملك صلاحية المدير.'; return;
+    }
+    adminLoggedV4 = true;
+    msg.className = 'auth-msg ok'; msg.textContent = 'تم التحقق.';
+    await showOnlineAdminPanel();
+    showToast('تم دخول لوحة المدير 🔐');
   };
 
-  window.adminLogout = async function(){try{await cloudClient?.auth.signOut()}catch(e){}adminLoggedV4=false;$('adminPanelView').classList.add('hidden');$('adminLoginView').classList.remove('hidden');};
+  window.adminLogout = async function(){
+    try { await cloudClient?.auth.signOut(); } catch(e){}
+    adminLoggedV4 = false;
+    if($('adminPanelView')) $('adminPanelView').classList.add('hidden');
+    if($('adminLoginView')) $('adminLoginView').classList.remove('hidden');
+  };
 
   async function showOnlineAdminPanel(){
-    $('adminLoginView').classList.add('hidden');$('adminPanelView').classList.remove('hidden');
-    await fetchCloudStages(); await seedInitialGameIfEmpty(); await fetchCloudStages();
-    await renderAdminStages(); await renderAdminStageSelectors(); await renderAdminUsers(); await renderAdminPayments(); showAdminTab(activeAdminTab);
+    if($('adminLoginView')) $('adminLoginView').classList.add('hidden');
+    if($('adminPanelView')) $('adminPanelView').classList.remove('hidden');
+    await fetchCloudStages();
+    await seedInitialGameIfEmpty();
+    await fetchCloudStages();
+    await renderAdminStages();
+    await renderAdminStageSelectors();
+    await renderAdminUsers();
+    await renderAdminPayments();
+    showAdminTab(activeAdminTab);
   }
 
   window.renderAdminStages = async function(){
-    const list=DB.stages||[];
-    $('adminStagesList').innerHTML=list.map((st,i)=>`<div class="admin-item"><div class="admin-item-head"><b>${i+1}. ${escapeHTML(st.name)}</b><span>${st.access==='free'?'<span class="free-badge">مجاني</span>':`<span class="price-badge">${Number(st.price||0)} جنيه</span>`}</span></div><small>عدد الأسئلة المحدد: ${st.question_count} — الأسئلة الموجودة: ${st.questions.length} — ⏱️ ${st.timeLimit} ثانية</small><div class="admin-actions" style="margin-top:8px"><button class="admin-secondary" onclick="editStage(${i})">✏️ تعديل</button><button class="admin-danger" onclick="deleteStage(${i})">🗑️ حذف</button></div></div>`).join('')||'<div class="empty-rank">لا توجد مراحل.</div>';
+    const list = DB.stages || [];
+    if($('adminStagesList')) {
+      $('adminStagesList').innerHTML = list.map((st, i) => `<div class="admin-item"><div class="admin-item-head"><b>${i + 1}. ${escapeHTML(st.name)}</b><span>${st.access === 'free' ? '<span class="free-badge">مجاني</span>' : `<span class="price-badge">${Number(st.price || 0)} جنيه</span>`}</span></div><small>عدد الأسئلة المحدد: ${st.question_count} — الأسئلة الموجودة: ${st.questions.length} — ⏱️ ${st.timeLimit} ثانية</small><div class="admin-actions" style="margin-top:8px"><button class="admin-secondary" onclick="editStage(${i})">✏️ تعديل</button><button class="admin-danger" onclick="deleteStage(${i})">🗑️ حذف</button></div></div>`).join('') || '<div class="empty-rank">لا توجد مراحل.</div>';
+    }
   };
 
   window.addStage = async function(e){
-    e.preventDefault(); if(!adminLoggedV4)return;
-    const title=$('newStageName').value.trim();if(!title)return;
-    const access=$('newStageAccess').value==='free',price=access?0:Math.max(0,Number($('newStagePrice').value||0));
-    const question_count=Math.max(1,Math.min(1000,Math.round(Number($('newStageQuestionCount')?.value||10))));
-    const time_limit_seconds=Math.max(5,Math.min(600,Math.round(Number($('newStageTime').value||60))));
-    const {data,error}=await cloudClient.from('stages').insert({title,description:'',sort_order:(DB.stages.length?Math.max(...DB.stages.map(s=>s.dbId))+1:1),question_count,time_limit_seconds,is_free:access,price_egp:price,is_active:true}).select('*').single();
-    if(error){showToast(error.message);return;} await fetchCloudStages(); e.target.reset();$('newStagePrice').value=0;$('newStageQuestionCount').value=10;$('newStageTime').value=60;await renderAdminStages();await renderAdminStageSelectors();renderStages();showToast('تمت إضافة المرحلة ✅');
+    e.preventDefault();
+    if(!adminLoggedV4) return;
+    const title = $('newStageName').value.trim();
+    if(!title) return;
+    const access = $('newStageAccess').value === 'free';
+    const price = access ? 0 : Math.max(0, Number($('newStagePrice').value || 0));
+    const question_count = Math.max(1, Math.min(1000, Math.round(Number($('newStageQuestionCount')?.value || 10))));
+    const time_limit_seconds = Math.max(5, Math.min(600, Math.round(Number($('newStageTime').value || 60))));
+    const { error } = await cloudClient.from('stages').insert({
+      title, description: '', sort_order: (DB.stages.length ? Math.max(...DB.stages.map(s => s.dbId)) + 1 : 1),
+      question_count, time_limit_seconds, is_free: access, price_egp: price, is_active: true
+    }).select('*').single();
+    if(error){ showToast(error.message); return; }
+    await fetchCloudStages();
+    e.target.reset();
+    $('newStagePrice').value = 0;
+    $('newStageQuestionCount').value = 10;
+    $('newStageTime').value = 60;
+    await renderAdminStages();
+    await renderAdminStageSelectors();
+    renderStages();
+    showToast('تمت إضافة المرحلة ✅');
   };
 
   window.editStage = async function(i){
-    const st=DB.stages[i];if(!st)return;
-    const name=prompt('اسم المرحلة:',st.name);if(name===null)return;
-    const price=prompt('السعر بالجنيه (0 = مجاني):',String(st.price||0));if(price===null)return;
-    const count=prompt('عدد الأسئلة المعروض في المرحلة:',String(st.question_count||st.questions.length||10));if(count===null)return;
-    const tm=prompt('مدة السؤال بالثواني (5 - 600):',String(st.timeLimit||60));if(tm===null)return;
-    const paid=Number(price||0)>0;
-    const {error}=await cloudClient.from('stages').update({title:name.trim()||st.name,price_egp:Math.max(0,Number(price)||0),is_free:!paid,question_count:Math.max(1,Math.min(1000,Math.round(Number(count)||1))),time_limit_seconds:Math.max(5,Math.min(600,Math.round(Number(tm)||60)))}).eq('id',st.dbId);
-    if(error){showToast(error.message);return;} await fetchCloudStages();await renderAdminStages();await renderAdminStageSelectors();renderStages();if(i===(state.stageIndex||0))loadQ();showToast('تم تعديل المرحلة ✅');
+    const st = DB.stages[i];
+    if(!st) return;
+    const name = prompt('اسم المرحلة:', st.name);
+    if(name === null) return;
+    const price = prompt('السعر بالجنيه (0 = مجاني):', String(st.price || 0));
+    if(price === null) return;
+    const count = prompt('عدد الأسئلة المعروض في المرحلة:', String(st.question_count || st.questions.length || 10));
+    if(count === null) return;
+    const tm = prompt('مدة السؤال بالثواني (5 - 600):', String(st.timeLimit || 60));
+    if(tm === null) return;
+    const paid = Number(price || 0) > 0;
+    const { error } = await cloudClient.from('stages').update({
+      title: name.trim() || st.name, price_egp: Math.max(0, Number(price) || 0),
+      is_free: !paid, question_count: Math.max(1, Math.min(1000, Math.round(Number(count) || 1))),
+      time_limit_seconds: Math.max(5, Math.min(600, Math.round(Number(tm) || 60)))
+    }).eq('id', st.dbId);
+    if(error){ showToast(error.message); return; }
+    await fetchCloudStages();
+    await renderAdminStages();
+    await renderAdminStageSelectors();
+    renderStages();
+    if(i === (state.stageIndex || 0)) loadQ();
+    showToast('تم تعديل المرحلة ✅');
   };
 
   window.deleteStage = async function(i){
-    const st=DB.stages[i];if(!st)return;if(DB.stages.length<=1){showToast('يجب أن تبقى مرحلة واحدة على الأقل.');return;}if(!confirm(`حذف المرحلة «${st.name}» بكل أسئلتها؟`))return;
-    const {error}=await cloudClient.from('stages').delete().eq('id',st.dbId);if(error){showToast(error.message);return;}await fetchCloudStages();state.stageIndex=Math.min(state.stageIndex||0,Math.max(0,DB.stages.length-1));state.questionIndex=0;await renderAdminStages();await renderAdminStageSelectors();renderStages();loadQ();showToast('تم حذف المرحلة 🗑️');
+    const st = DB.stages[i];
+    if(!st) return;
+    if(DB.stages.length <= 1){ showToast('يجب أن تبقى مرحلة واحدة على الأقل.'); return; }
+    if(!confirm(`حذف المرحلة «${st.name}» بكل أسئلتها؟`)) return;
+    const { error } = await cloudClient.from('stages').delete().eq('id', st.dbId);
+    if(error){ showToast(error.message); return; }
+    await fetchCloudStages();
+    state.stageIndex = Math.min(state.stageIndex || 0, Math.max(0, DB.stages.length - 1));
+    state.questionIndex = 0;
+    await renderAdminStages();
+    await renderAdminStageSelectors();
+    renderStages();
+    loadQ();
+    showToast('تم حذف المرحلة 🗑️');
   };
 
   window.renderAdminStageSelectors = async function(){
-    const opts=DB.stages.map((st,i)=>`<option value="${i}">${i+1}. ${escapeHTML(st.name)} (${st.questions.length}/${st.question_count})</option>`).join('');if($('questionStage'))$('questionStage').innerHTML=opts;if($('questionListStage'))$('questionListStage').innerHTML=opts;await renderAdminQuestions();
+    const opts = DB.stages.map((st, i) => `<option value="${i}">${i + 1}. ${escapeHTML(st.name)} (${st.questions.length}/${st.question_count})</option>`).join('');
+    if($('questionStage')) $('questionStage').innerHTML = opts;
+    if($('questionListStage')) $('questionListStage').innerHTML = opts;
+    await renderAdminQuestions();
   };
 
   window.addQuestion = async function(e){
-    e.preventDefault();if(!adminLoggedV4)return;const i=Number($('questionStage').value),st=DB.stages[i];if(!st)return;
-    const row={stage_id:st.dbId,question_text:$('newQText').value.trim(),choice_a:$('newQA').value.trim(),choice_b:$('newQB').value.trim(),choice_c:$('newQC').value.trim(),choice_d:$('newQD').value.trim(),correct_choice:['a','b','c','d'][Number($('newQCorrect').value)||0],sort_order:st.questions.length+1,is_active:true};
-    const {error}=await cloudClient.from('questions').insert(row);if(error){showToast(error.message);return;}await fetchCloudStages();e.target.reset();$('questionStage').value=i;await renderAdminQuestions();await renderAdminStages();renderStages();showToast('تمت إضافة السؤال ✅');
+    e.preventDefault();
+    if(!adminLoggedV4) return;
+    const i = Number($('questionStage').value), st = DB.stages[i];
+    if(!st) return;
+    const row = {
+      stage_id: st.dbId, question_text: $('newQText').value.trim(),
+      choice_a: $('newQA').value.trim(), choice_b: $('newQB').value.trim(),
+      choice_c: $('newQC').value.trim(), choice_d: $('newQD').value.trim(),
+      correct_choice: ['a', 'b', 'c', 'd'][Number($('newQCorrect').value) || 0],
+      sort_order: st.questions.length + 1, is_active: true
+    };
+    const { error } = await cloudClient.from('questions').insert(row);
+    if(error){ showToast(error.message); return; }
+    await fetchCloudStages();
+    e.target.reset();
+    $('questionStage').value = i;
+    await renderAdminQuestions();
+    await renderAdminStages();
+    renderStages();
+    showToast('تمت إضافة السؤال ✅');
   };
 
   window.renderAdminQuestions = async function(){
-    const i=Number($('questionListStage')?.value||0),st=DB.stages[i];if(!st||!$('adminQuestionsList'))return;$('adminQuestionsList').innerHTML=st.questions.map((q,j)=>`<div class="admin-item"><div><b>${j+1}. ${escapeHTML(q.text)}</b></div><small>الإجابة الصحيحة: ${['أ','ب','ج','د'][q.answer]} — ${escapeHTML(q.options[q.answer]||'')}</small><div class="admin-actions" style="margin-top:8px"><button class="admin-secondary" onclick="editQuestion(${i},${j})">✏️ تعديل</button><button class="admin-danger" onclick="deleteQuestion(${i},${j})">🗑️ حذف</button></div></div>`).join('')||'<div class="empty-rank">لا توجد أسئلة في هذه المرحلة.</div>';
+    const i = Number($('questionListStage')?.value || 0), st = DB.stages[i];
+    if(!st || !$('adminQuestionsList')) return;
+    $('adminQuestionsList').innerHTML = st.questions.map((q, j) => `<div class="admin-item"><div><b>${j + 1}. ${escapeHTML(q.text)}</b></div><small>الإجابة الصحيحة: ${['أ', 'ب', 'ج', 'د'][q.answer]} — ${escapeHTML(q.options[q.answer] || '')}</small><div class="admin-actions" style="margin-top:8px"><button class="admin-secondary" onclick="editQuestion(${i},${j})">✏️ تعديل</button><button class="admin-danger" onclick="deleteQuestion(${i},${j})">🗑️ حذف</button></div></div>`).join('') || '<div class="empty-rank">لا توجد أسئلة في هذه المرحلة.</div>';
   };
 
-  if($('questionListStage'))$('questionListStage').addEventListener('change',()=>renderAdminQuestions());
+  if(typeof window !== 'undefined') {
+    setTimeout(() => {
+      if($('questionListStage')) $('questionListStage').addEventListener('change', () => renderAdminQuestions());
+    }, 100);
+  }
 
-  window.editQuestion = async function(i,j){
-    const q=DB.stages[i]?.questions[j];if(!q)return;const text=prompt('نص السؤال:',q.text);if(text===null)return;const opts=[...q.options];for(let n=0;n<4;n++){const x=prompt(`الخيار ${['أ','ب','ج','د'][n]}:`,opts[n]);if(x===null)return;opts[n]=x;}const a=prompt('رقم الإجابة الصحيحة (1-4):',String(q.answer+1));if(a===null)return;const {error}=await cloudClient.from('questions').update({question_text:text,choice_a:opts[0],choice_b:opts[1],choice_c:opts[2],choice_d:opts[3],correct_choice:['a','b','c','d'][Math.min(3,Math.max(0,Number(a)-1))]}).eq('id',q.id);if(error){showToast(error.message);return;}await fetchCloudStages();await renderAdminQuestions();await renderAdminStages();renderStages();loadQ();showToast('تم تعديل السؤال ✅');
+  window.editQuestion = async function(i, j){
+    const q = DB.stages[i]?.questions[j];
+    if(!q) return;
+    const text = prompt('نص السؤال:', q.text);
+    if(text === null) return;
+    const opts = [...q.options];
+    for(let n = 0; n < 4; n++){
+      const x = prompt(`الخيار ${['أ', 'ب', 'ج', 'د'][n]}:`, opts[n]);
+      if(x === null) return;
+      opts[n] = x;
+    }
+    const a = prompt('رقم الإجابة الصحيحة (1-4):', String(q.answer + 1));
+    if(a === null) return;
+    const { error } = await cloudClient.from('questions').update({
+      question_text: text, choice_a: opts[0], choice_b: opts[1], choice_c: opts[2], choice_d: opts[3],
+      correct_choice: ['a', 'b', 'c', 'd'][Math.min(3, Math.max(0, Number(a) - 1))]
+    }).eq('id', q.id);
+    if(error){ showToast(error.message); return; }
+    await fetchCloudStages();
+    await renderAdminQuestions();
+    await renderAdminStages();
+    renderStages();
+    loadQ();
+    showToast('تم تعديل السؤال ✅');
   };
 
-  window.deleteQuestion = async function(i,j){const q=DB.stages[i]?.questions[j];if(!q)return;if(!confirm('حذف هذا السؤال؟'))return;const {error}=await cloudClient.from('questions').delete().eq('id',q.id);if(error){showToast(error.message);return;}await fetchCloudStages();await renderAdminQuestions();await renderAdminStages();renderStages();loadQ();showToast('تم حذف السؤال 🗑️');};
+  window.deleteQuestion = async function(i, j){
+    const q = DB.stages[i]?.questions[j];
+    if(!q) return;
+    if(!confirm('حذف هذا السؤال؟')) return;
+    const { error } = await cloudClient.from('questions').delete().eq('id', q.id);
+    if(error){ showToast(error.message); return; }
+    await fetchCloudStages();
+    await renderAdminQuestions();
+    await renderAdminStages();
+    renderStages();
+    loadQ();
+    showToast('تم حذف السؤال 🗑️');
+  };
 
   window.renderAdminUsers = async function(){
-    const {data,error}=await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins,created_at').order('total_score',{ascending:false});if(error){$('adminUsersList').innerHTML=`<div class="empty-rank">${escapeHTML(error.message)}</div>`;return;}
-    const {data:accessRows}=await cloudClient.from('stage_access').select('player_id,stage_id');const counts=new Map();(accessRows||[]).forEach(r=>counts.set(r.player_id,(counts.get(r.player_id)||0)+1));
-    $('adminUsersList').innerHTML=(data||[]).map((u)=>`<div class="admin-item"><div class="admin-item-head"><b>${escapeHTML(u.display_name||'لاعب')}</b><span>⭐ ${Number(u.total_score||0)}</span></div><small>النجوم: ${Number(u.total_stars||0)} — العملات: ${Number(u.coins||0)} — المراحل المفتوحة يدويًا: ${counts.get(u.id)||0}</small><div class="admin-actions" style="margin-top:8px"><button class="admin-primary" onclick="grantStage('${u.id}')">🔓 منح مرحلة</button><button class="admin-danger" onclick="deleteUserV4('${u.id}')">🗑️ حذف اللاعب</button></div></div>`).join('')||'<div class="empty-rank">لا يوجد لاعبين مسجلين بعد.</div>';
+    const { data, error } = await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins,created_at').order('total_score', { ascending: false });
+    if(error){ if($('adminUsersList')) $('adminUsersList').innerHTML = `<div class="empty-rank">${escapeHTML(error.message)}</div>`; return; }
+    const { data: accessRows } = await cloudClient.from('stage_access').select('player_id,stage_id');
+    const counts = new Map();
+    (accessRows || []).forEach(r => counts.set(r.player_id, (counts.get(r.player_id) || 0) + 1));
+    if($('adminUsersList')) {
+      $('adminUsersList').innerHTML = (data || []).map((u) => `<div class="admin-item"><div class="admin-item-head"><b>${escapeHTML(u.display_name || 'لاعب')}</b><span>⭐ ${Number(u.total_score || 0)}</span></div><small>النجوم: ${Number(u.total_stars || 0)} — العملات: ${Number(u.coins || 0)} — المراحل المفتوحة يدويًا: ${counts.get(u.id) || 0}</small><div class="admin-actions" style="margin-top:8px"><button class="admin-primary" onclick="grantStage('${u.id}')">🔓 منح مرحلة</button><button class="admin-danger" onclick="deleteUserV4('${u.id}')">🗑️ حذف اللاعب</button></div></div>`).join('') || '<div class="empty-rank">لا يوجد لاعبين مسجلين بعد.</div>';
+    }
   };
 
+  // 17. grantStage: resets attempts_used to 0, sets max_attempts = 1, granted_by_admin = true
   window.grantStage = async function(userId){
-    const u=(await cloudClient.from('profiles').select('display_name').eq('id',userId).maybeSingle()).data;if(!u)return;
-    const list=DB.stages.map((s,i)=>`${i+1}. ${s.name} — ${s.access==='free'?'مجانية':s.price+' جنيه'}`).join('\n');const n=prompt(`اكتب رقم المرحلة المراد فتحها للاعب ${u.display_name}:\n\n${list}`);if(n===null)return;const i=Number(n)-1,st=DB.stages[i];if(!st){showToast('رقم مرحلة غير صحيح.');return;}
-    const {error}=await cloudClient.from('stage_access').upsert({player_id:userId,stage_id:st.dbId,granted_by_admin:true,paid:false},{onConflict:'player_id,stage_id'});if(error){showToast(error.message);return;}await renderAdminUsers();showToast(`تم فتح «${st.name}» للاعب ${u.display_name} 🔓`);
+    const u = (await cloudClient.from('profiles').select('display_name').eq('id', userId).maybeSingle()).data;
+    if(!u) return;
+    const list = DB.stages.map((s, i) => `${i + 1}. ${s.name} — ${s.access === 'free' ? 'مجانية' : s.price + ' جنيه'}`).join('\n');
+    const n = prompt(`اكتب رقم المرحلة المراد فتحها للاعب ${u.display_name}:\n\n${list}`);
+    if(n === null) return;
+    const i = Number(n) - 1, st = DB.stages[i];
+    if(!st){ showToast('رقم مرحلة غير صحيح.'); return; }
+    const { error } = await cloudClient.from('stage_access').upsert({
+      player_id: userId,
+      stage_id: st.dbId,
+      granted_by_admin: true,
+      paid: false,
+      attempts_used: 0,
+      max_attempts: 1
+    }, { onConflict: 'player_id,stage_id' });
+    if(error){ showToast(error.message); return; }
+    await fetchCloudStages();
+    await renderAdminUsers();
+    renderStages();
+    showToast(`تم فتح «${st.name}» للاعب ${u.display_name} 🔓`);
   };
 
   window.deleteUserV4 = async function(userId){
-    if(userId===currentUser){showToast('لا يمكن حذف حساب المدير/الحساب المستخدم حاليًا.');return;}
-    const row=(await cloudClient.from('profiles').select('display_name').eq('id',userId).maybeSingle()).data;if(!row)return;if(!confirm(`حذف ملف اللاعب «${row.display_name}» من قاعدة اللعبة؟`))return;
-    const {error}=await cloudClient.from('profiles').delete().eq('id',userId);if(error){showToast(error.message);return;}await renderAdminUsers();await renderLeaderboard();showToast('تم حذف ملف اللاعب ✅');
+    if(userId === currentUser){ showToast('لا يمكن حذف حساب المدير/الحساب المستخدم حاليًا.'); return; }
+    const row = (await cloudClient.from('profiles').select('display_name').eq('id', userId).maybeSingle()).data;
+    if(!row) return;
+    if(!confirm(`حذف ملف اللاعب «${row.display_name}» من قاعدة اللعبة؟`)) return;
+    const { error } = await cloudClient.from('profiles').delete().eq('id', userId);
+    if(error){ showToast(error.message); return; }
+    await renderAdminUsers();
+    await renderLeaderboard();
+    showToast('تم حذف ملف اللاعب ✅');
   };
 
   async function loadPaymentRows(){
-    const {data,error}=await cloudClient.from('payment_requests').select('id,player_id,stage_id,amount_egp,payment_method,transfer_reference,sender_name,status,admin_note,created_at,reviewed_at,profiles(display_name),stages(title)').order('created_at',{ascending:false});
-    if(error) return {data:[],error}; return {data:data||[],error:null};
+    const { data, error } = await cloudClient.from('payment_requests').select('id,player_id,stage_id,amount_egp,payment_method,transfer_reference,sender_name,status,admin_note,created_at,reviewed_at,profiles(display_name),stages(title)').order('created_at', { ascending: false });
+    if(error) return { data: [], error };
+    return { data: data || [], error: null };
   }
+
   window.renderAdminPayments = async function(){
-    const {data,error}=await loadPaymentRows();if(error){$('adminPaymentsList').innerHTML=`<div class="empty-rank">${escapeHTML(error.message)}</div>`;return;}
-    const pending=(data||[]).filter(p=>p.status==='pending').length;if($('paymentPendingCount'))$('paymentPendingCount').textContent=pending;
-    $('adminPaymentsList').innerHTML=(data||[]).map(p=>{const st=p.status==='pending'?'قيد المراجعة':p.status==='approved'?'مقبول':'مرفوض';return `<div class="admin-item ${p.status==='approved'?'pay-approved':p.status==='rejected'?'pay-rejected':'pay-pending'}"><div class="admin-item-head"><b>${escapeHTML(p.profiles?.display_name||p.sender_name||'لاعب')} — ${escapeHTML(p.stages?.title||'مرحلة')}</b><span>${st}</span></div><small>المبلغ: ${Number(p.amount_egp||0).toLocaleString('ar-EG')} جنيه — ${p.payment_method==='instapay'?'InstaPay':'محفظة إلكترونية'} — المرجع: ${escapeHTML(p.transfer_reference||'')}</small><br><small>اسم صاحب التحويل: ${escapeHTML(p.sender_name||'')} — ${new Date(p.created_at).toLocaleString('ar-EG')}</small>${p.status==='pending'?`<div class="admin-actions" style="margin-top:8px"><button class="admin-primary" onclick="approvePayment('${p.id}')">✅ اعتماد وفتح</button><button class="admin-danger" onclick="rejectPayment('${p.id}')">❌ رفض</button></div>`:''}</div>`}).join('')||'<div class="empty-rank">لا توجد طلبات دفع.</div>';
+    const { data, error } = await loadPaymentRows();
+    if(error){ if($('adminPaymentsList')) $('adminPaymentsList').innerHTML = `<div class="empty-rank">${escapeHTML(error.message)}</div>`; return; }
+    const pending = (data || []).filter(p => p.status === 'pending').length;
+    if($('paymentPendingCount')) $('paymentPendingCount').textContent = pending;
+    if($('adminPaymentsList')) {
+      $('adminPaymentsList').innerHTML = (data || []).map(p => {
+        const st = p.status === 'pending' ? 'قيد المراجعة' : p.status === 'approved' ? 'مقبول' : 'مرفوض';
+        return `<div class="admin-item ${p.status === 'approved' ? 'pay-approved' : p.status === 'rejected' ? 'pay-rejected' : 'pay-pending'}"><div class="admin-item-head"><b>${escapeHTML(p.profiles?.display_name || p.sender_name || 'لاعب')} — ${escapeHTML(p.stages?.title || 'مرحلة')}</b><span>${st}</span></div><small>المبلغ: ${Number(p.amount_egp || 0).toLocaleString('ar-EG')} جنيه — ${p.payment_method === 'instapay' ? 'InstaPay' : 'محفظة إلكترونية'} — المرجع: ${escapeHTML(p.transfer_reference || '')}</small><br><small>اسم صاحب التحويل: ${escapeHTML(p.sender_name || '')} — ${new Date(p.created_at).toLocaleString('ar-EG')}</small>${p.status === 'pending' ? `<div class="admin-actions" style="margin-top:8px"><button class="admin-primary" onclick="approvePayment('${p.id}')">✅ اعتماد وفتح</button><button class="admin-danger" onclick="rejectPayment('${p.id}')">❌ رفض</button></div>` : ''}</div>`;
+      }).join('') || '<div class="empty-rank">لا توجد طلبات دفع.</div>';
+    }
   };
 
-  window.approvePayment = async function(id){const {data:p}=await cloudClient.from('payment_requests').select('id,player_id,stage_id,status').eq('id',id).maybeSingle();if(!p||p.status!=='pending')return;const {error:a}=await cloudClient.from('stage_access').upsert({player_id:p.player_id,stage_id:p.stage_id,granted_by_admin:false,paid:true},{onConflict:'player_id,stage_id'});if(a){showToast(a.message);return;}const {error:u}=await cloudClient.from('payment_requests').update({status:'approved',reviewed_at:new Date().toISOString()}).eq('id',id);if(u){showToast(u.message);return;}await renderAdminPayments();showToast('تم اعتماد الطلب وفتح المرحلة ✅');};
-  window.rejectPayment = async function(id){if(!confirm('تأكيد رفض طلب الدفع؟'))return;const {error}=await cloudClient.from('payment_requests').update({status:'rejected',reviewed_at:new Date().toISOString()}).eq('id',id);if(error){showToast(error.message);return;}await renderAdminPayments();showToast('تم رفض الطلب.');};
+  // 18. approvePayment: resets attempts_used to 0, sets max_attempts = 1, paid = true
+  window.approvePayment = async function(id){
+    const { data: p } = await cloudClient.from('payment_requests').select('id,player_id,stage_id,status').eq('id', id).maybeSingle();
+    if(!p || p.status !== 'pending') return;
+    const { error: a } = await cloudClient.from('stage_access').upsert({
+      player_id: p.player_id,
+      stage_id: p.stage_id,
+      granted_by_admin: false,
+      paid: true,
+      attempts_used: 0,
+      max_attempts: 1
+    }, { onConflict: 'player_id,stage_id' });
+    if(a){ showToast(a.message); return; }
+    const { error: u } = await cloudClient.from('payment_requests').update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString()
+    }).eq('id', id);
+    if(u){ showToast(u.message); return; }
+    await fetchCloudStages();
+    await renderAdminPayments();
+    renderStages();
+    showToast('تم اعتماد الطلب وفتح المرحلة ✅');
+  };
+
+  window.rejectPayment = async function(id){
+    if(!confirm('تأكيد رفض طلب الدفع؟')) return;
+    const { error } = await cloudClient.from('payment_requests').update({
+      status: 'rejected',
+      reviewed_at: new Date().toISOString()
+    }).eq('id', id);
+    if(error){ showToast(error.message); return; }
+    await renderAdminPayments();
+    showToast('تم رفض الطلب.');
+  };
 
   window.openPayment = async function(method){
-    if(!currentUser){showToast('سجل الدخول أولًا لإرسال طلب الدفع.');return;}
-    const {data:{user}}=await cloudClient.auth.getUser();if(!user)return;
-    const {data:owned}=await cloudClient.from('stage_access').select('stage_id').eq('player_id',user.id);const ownedSet=new Set((owned||[]).map(x=>String(x.stage_id)));
-    const opts=DB.stages.map((st,i)=>(st.access==='paid'&&!ownedSet.has(String(st.dbId)))?`<option value="${i}">${i+1}. ${escapeHTML(st.name)}</option>`:'').filter(Boolean).join('');$('payMethod').value=method;$('payStage').innerHTML=opts||'<option value="">لا توجد مراحل مدفوعة حاليًا</option>';updatePaymentSummary();$('paymentStatus').className='payment-status';$('paymentStatus').textContent='';$('payerName').value=$('playerName').textContent||'';$('paymentRef').value='';$('paymentModal').style.display='flex';
+    if(!currentUser){ showToast('سجل الدخول أولًا لإرسال طلب الدفع.'); return; }
+    const { data: { user } } = await cloudClient.auth.getUser();
+    if(!user) return;
+    const { data: owned } = await cloudClient.from('stage_access').select('stage_id').eq('player_id', user.id);
+    const ownedSet = new Set((owned || []).map(x => String(x.stage_id)));
+    const opts = DB.stages.map((st, i) => (st.access === 'paid' && !ownedSet.has(String(st.dbId))) ? `<option value="${i}">${i + 1}. ${escapeHTML(st.name)}</option>` : '').filter(Boolean).join('');
+    $('payMethod').value = method;
+    $('payStage').innerHTML = opts || '<option value="">لا توجد مراحل مدفوعة حاليًا</option>';
+    updatePaymentSummary();
+    $('paymentStatus').className = 'payment-status';
+    $('paymentStatus').textContent = '';
+    $('payerName').value = $('playerName')?.textContent || '';
+    $('paymentRef').value = '';
+    $('paymentModal').style.display = 'flex';
   };
 
-  window.updatePaymentSummary = function(){const i=Number($('payStage').value),st=DB.stages[i];$('paySummary').textContent=st?`المطلوب: ${Number(st.price||0).toLocaleString('ar-EG')} جنيه — التحويل إلى ${PAYMENT_NUMBER_V4}`:'لا توجد مرحلة مدفوعة.';};
+  window.updatePaymentSummary = function(){
+    const i = Number($('payStage').value), st = DB.stages[i];
+    $('paySummary').textContent = st ? `المطلوب: ${Number(st.price || 0).toLocaleString('ar-EG')} جنيه — التحويل إلى ${PAYMENT_NUMBER_V4}` : 'لا توجد مرحلة مدفوعة.';
+  };
 
   window.submitPaymentRequest = async function(){
-    const i=Number($('payStage').value),st=DB.stages[i],payer=$('payerName').value.trim(),ref=$('paymentRef').value.trim();
-    if(!st)return setPayStatus('err','لا توجد مرحلة مدفوعة لاختيارها.');if(!payer||ref.length<3)return setPayStatus('err','اكتب اسم صاحب التحويل ورقم/مرجع العملية.');
-    const {data:{user}}=await cloudClient.auth.getUser();if(!user)return;
-    const {error}=await cloudClient.from('payment_requests').insert({player_id:user.id,stage_id:st.dbId,amount_egp:Number(st.price||0),payment_method:$('payMethod').value,transfer_reference:ref,sender_name:payer,status:'pending'});if(error){setPayStatus('err',error.message);return;}setPayStatus('ok','تم إرسال الطلب للمدير للمراجعة ✅');setTimeout(closePayment,800);showToast('تم إرسال طلب الدفع ✅');
+    const i = Number($('payStage').value), st = DB.stages[i], payer = $('payerName').value.trim(), ref = $('paymentRef').value.trim();
+    if(!st) return setPayStatus('err', 'لا توجد مرحلة مدفوعة لاختيارها.');
+    if(!payer || ref.length < 3) return setPayStatus('err', 'اكتب اسم صاحب التحويل ورقم/مرجع العملية.');
+    const { data: { user } } = await cloudClient.auth.getUser();
+    if(!user) return;
+    const { error } = await cloudClient.from('payment_requests').insert({
+      player_id: user.id,
+      stage_id: st.dbId,
+      amount_egp: Number(st.price || 0),
+      payment_method: $('payMethod').value,
+      transfer_reference: ref,
+      sender_name: payer,
+      status: 'pending'
+    });
+    if(error){ setPayStatus('err', error.message); return; }
+    setPayStatus('ok', 'تم إرسال الطلب للمدير للمراجعة ✅');
+    setTimeout(closePayment, 800);
+    showToast('تم إرسال طلب الدفع ✅');
   };
 
-  window.showAdminTab = async function(tab){activeAdminTab=tab;[['stages','adminStageTab'],['questions','adminQuestionsTab'],['users','adminUsersTab'],['payments','adminPaymentsTab']].forEach(([k,id])=>$(id).classList.toggle('hidden',k!==tab));['stages','questions','users','payments'].forEach(k=>{const el=$('adminTab'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.classList.toggle('active',k===tab)});if(tab==='stages')await renderAdminStages();if(tab==='questions'){await renderAdminStageSelectors();await renderAdminQuestions()}if(tab==='users')await renderAdminUsers();if(tab==='payments')await renderAdminPayments();};
+  // 19. Reports Tab
+  window.populateReportSelectors = async function(){
+    if(!adminLoggedV4 || !cloudClient) return;
+    const { data, error } = await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins,created_at').order('display_name', { ascending: true });
+    if(error){ showToast(error.message); return; }
+    reportsUsers = data || [];
+    if($('reportUserSelect')) {
+      $('reportUserSelect').innerHTML = reportsUsers.map((u) => `<option value="${u.id}">${escapeHTML(u.display_name || 'لاعب')} — ${Number(u.total_score || 0)} نقطة</option>`).join('') || '<option value="">لا يوجد لاعبون</option>';
+    }
+    if($('reportStageSelect')) {
+      $('reportStageSelect').innerHTML = '<option value="">كل المراحل</option>' + (DB.stages || []).map(s => `<option value="${s.dbId}">${escapeHTML(s.name)}</option>`).join('');
+    }
+    await loadStudentReport();
+  };
 
-  window.closeAdmin = function(){$('adminOverlay').style.display='none';};
+  window.loadStudentReport = async function(){
+    const uid = $('reportUserSelect')?.value;
+    if(!uid) return;
+    const sid = $('reportStageSelect')?.value || '';
+    let q = cloudClient.from('stage_attempts').select('id,player_id,stage_id,attempt_no,status,started_at,completed_at,score_earned,stars_earned,stages(title)').eq('player_id', uid).order('started_at', { ascending: false });
+    if(sid) q = q.eq('stage_id', sid);
+    const { data: attempts, error } = await q;
+    if(error){ if($('studentReportList')) $('studentReportList').innerHTML = `<div class="empty-rank">${escapeHTML(error.message)}</div>`; return; }
+    const totalAttempts = (attempts || []).length;
+    const totalScore = (attempts || []).reduce((a, x) => a + Number(x.score_earned || 0), 0);
+    const totalStars = (attempts || []).reduce((a, x) => a + Number(x.stars_earned || 0), 0);
+    if($('studentReportSummary')) {
+      $('studentReportSummary').innerHTML = `<div class="report-kpi">المحاولات<br><b>${totalAttempts}</b></div><div class="report-kpi">نقاط هذه المرحلة/المراحل<br><b>${totalScore}</b></div><div class="report-kpi">النجوم<br><b>${totalStars}</b></div><div class="report-kpi">الحالة<br><b>تقارير محفوظة</b></div>`;
+    }
+    if(!attempts?.length){
+      if($('studentReportList')) $('studentReportList').innerHTML = '<div class="empty-rank">لا توجد محاولات مسجلة لهذا الطالب.</div>';
+      return;
+    }
+    const ids = attempts.map(a => a.id);
+    const { data: ans, error: ae } = await cloudClient.from('player_answers').select('attempt_id,question_id,selected_choice,is_correct,points,elapsed_seconds,created_at,questions(question_text,choice_a,choice_b,choice_c,choice_d,correct_choice),stages(title)').in('attempt_id', ids).order('created_at', { ascending: true });
+    if(ae){ if($('studentReportList')) $('studentReportList').innerHTML = `<div class="empty-rank">${escapeHTML(ae.message)}</div>`; return; }
+    const by = new Map();
+    (ans || []).forEach(a => {
+      if(!by.has(a.attempt_id)) by.set(a.attempt_id, []);
+      by.get(a.attempt_id).push(a);
+    });
+    const letter = { a: 'أ', b: 'ب', c: 'ج', d: 'د' };
+    if($('studentReportList')) {
+      $('studentReportList').innerHTML = (attempts || []).map(a => {
+        const arr = by.get(a.id) || [];
+        const st = a.status === 'completed' ? 'مكتملة' : a.status === 'abandoned' ? 'متروكة' : 'نشطة';
+        const table = arr.length ? `<div class="attempt-answers"><table class="report-table"><thead><tr><th>#</th><th>السؤال</th><th>إجابة الطالب</th><th>الصحيحة</th><th>النتيجة</th><th>الزمن</th></tr></thead><tbody>${arr.map((x, j) => {
+          const qObj = x.questions || {};
+          const selected = x.selected_choice ? `${letter[x.selected_choice] || x.selected_choice}) ${qObj['choice_' + x.selected_choice] || ''}` : 'لم يجب';
+          const correct = `${letter[qObj.correct_choice] || qObj.correct_choice}) ${qObj['choice_' + qObj.correct_choice] || ''}`;
+          const cls = x.is_correct ? 'report-correct' : (!x.selected_choice ? 'report-timeout' : 'report-wrong');
+          return `<tr><td>${j + 1}</td><td>${escapeHTML(qObj.question_text || '')}</td><td>${escapeHTML(selected)}</td><td>${escapeHTML(correct)}</td><td class="${cls}">${x.is_correct ? `✅ ${x.points} نقطة` : (!x.selected_choice ? '⏰ انتهى الوقت' : '❌ خطأ')}</td><td>${Number(x.elapsed_seconds || 0).toFixed(1)}ث</td></tr>`;
+        }).join('')}</tbody></table></div>` : '<div class="small">لا توجد إجابات محفوظة.</div>';
+        return `<div class="attempt-card"><div class="attempt-head"><b>📘 ${escapeHTML(a.stages?.title || 'مرحلة')} — محاولة ${a.attempt_no}</b><span>${st} | ⭐ ${Number(a.score_earned || 0)} نقطة</span></div><div class="small">بدأت: ${new Date(a.started_at).toLocaleString('ar-EG')} ${a.completed_at ? ` — انتهت: ${new Date(a.completed_at).toLocaleString('ar-EG')}` : ''}</div>${table}</div>`;
+      }).join('');
+    }
+  };
 
-  // Online student auth: use a real email address with Supabase Auth.
+  // 20. showAdminTab
+  window.showAdminTab = async function(tab){
+    const tabs = ['stages', 'questions', 'users', 'reports', 'payments'];
+    tabs.forEach(k => {
+      const id = 'admin' + k.charAt(0).toUpperCase() + k.slice(1) + 'Tab';
+      if($(id)) $(id).classList.toggle('hidden', k !== tab);
+      const el = $('adminTab' + k.charAt(0).toUpperCase() + k.slice(1));
+      if(el) el.classList.toggle('active', k === tab);
+    });
+    activeAdminTab = tab;
+    if(tab === 'stages') await renderAdminStages();
+    if(tab === 'questions'){ await renderAdminStageSelectors(); await renderAdminQuestions(); }
+    if(tab === 'users') await renderAdminUsers();
+    if(tab === 'reports') await populateReportSelectors();
+    if(tab === 'payments') await renderAdminPayments();
+  };
+
+  window.closeAdmin = function(){
+    if($('adminOverlay')) $('adminOverlay').style.display = 'none';
+  };
+
+  // 21. Online student auth: Supabase Auth
   window.handleAuth = async function(e){
     e.preventDefault();
-    const email=$('authName').value.trim().toLowerCase();
-    const displayName=$('authDisplayName')?.value.trim().replace(/\s+/g,' ') || '';
-    const pass=$('authPass').value;
-    const msg=$('authMsg');
-    if(!cloudClient){msg.className='auth-msg err';msg.textContent='تعذر الاتصال بالخادم.';return;}
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg.className='auth-msg err';msg.textContent='اكتب بريدًا إلكترونيًا صحيحًا، مثل: ahmed@gmail.com';return;}
-    if(pass.length<6){msg.className='auth-msg err';msg.textContent='كلمة السر يجب أن تكون 6 أحرف على الأقل.';return;}
-    if(authMode==='register' && displayName.length<2){msg.className='auth-msg err';msg.textContent='اكتب اسم اللاعب.';return;}
-    msg.className='auth-msg';msg.textContent='جارٍ الاتصال...';
-    if(authMode==='register'){
-      const {data,error}=await cloudClient.auth.signUp({email,password:pass,options:{data:{display_name:displayName}}});
-      if(error){msg.className='auth-msg err';msg.textContent=error.message;return;}
-      if(!data.user){msg.className='auth-msg err';msg.textContent='تعذر إنشاء الحساب.';return;}
-      await cloudClient.from('profiles').upsert({id:data.user.id,display_name:displayName,role:'player'},{onConflict:'id'});
-      if(!data.session){msg.className='auth-msg ok';msg.textContent='تم إنشاء الحساب. افتح بريدك الإلكتروني وأكّد الحساب ثم سجّل الدخول.';return;}
-      currentUser=data.user.id;await fetchCloudStages();await cloudLoadStudentState();showToast('تم إنشاء الحساب بنجاح 🎉');
-    }else{
-      const {data,error}=await cloudClient.auth.signInWithPassword({email,password:pass});
-      if(error||!data.user){msg.className='auth-msg err';msg.textContent='البريد الإلكتروني أو كلمة السر غير صحيحة.';return;}
-      const existing=(await cloudClient.from('profiles').select('id,display_name,role').eq('id',data.user.id).maybeSingle()).data;
+    const email = $('authName').value.trim().toLowerCase();
+    const displayName = $('authDisplayName')?.value.trim().replace(/\s+/g, ' ') || '';
+    const pass = $('authPass').value;
+    const msg = $('authMsg');
+    if(!cloudClient){ msg.className = 'auth-msg err'; msg.textContent = 'تعذر الاتصال بالخادم.'; return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ msg.className = 'auth-msg err'; msg.textContent = 'اكتب بريدًا إلكترونيًا صحيحًا، مثل: ahmed@gmail.com'; return; }
+    if(pass.length < 6){ msg.className = 'auth-msg err'; msg.textContent = 'كلمة السر يجب أن تكون 6 أحرف على الأقل.'; return; }
+    if(authMode === 'register' && displayName.length < 2){ msg.className = 'auth-msg err'; msg.textContent = 'اكتب اسم اللاعب.'; return; }
+    msg.className = 'auth-msg'; msg.textContent = 'جارٍ الاتصال...';
+    if(authMode === 'register'){
+      const { data, error } = await cloudClient.auth.signUp({ email, password: pass, options: { data: { display_name: displayName } } });
+      if(error){ msg.className = 'auth-msg err'; msg.textContent = error.message; return; }
+      if(!data.user){ msg.className = 'auth-msg err'; msg.textContent = 'تعذر إنشاء الحساب.'; return; }
+      await cloudClient.from('profiles').upsert({ id: data.user.id, display_name: displayName, role: 'player' }, { onConflict: 'id' });
+      if(!data.session){ msg.className = 'auth-msg ok'; msg.textContent = 'تم إنشاء الحساب. افتح بريدك الإلكتروني وأكّد الحساب ثم سجّل الدخول.'; return; }
+      currentUser = data.user.id;
+      localStorage.setItem(STORAGE_SESSION, currentUser);
+      await fetchCloudStages();
+      await cloudLoadStudentState();
+      showToast('تم إنشاء الحساب بنجاح 🎉');
+    } else {
+      const { data, error } = await cloudClient.auth.signInWithPassword({ email, password: pass });
+      if(error || !data.user){ msg.className = 'auth-msg err'; msg.textContent = 'البريد الإلكتروني أو كلمة السر غير صحيحة.'; return; }
+      const existing = (await cloudClient.from('profiles').select('id,display_name,role').eq('id', data.user.id).maybeSingle()).data;
       if(!existing){
-        const fallbackName=(data.user.user_metadata?.display_name || email.split('@')[0]).slice(0,20);
-        const {error:insertError}=await cloudClient.from('profiles').insert({id:data.user.id,display_name:fallbackName,role:'player'});
-        if(insertError){msg.className='auth-msg err';msg.textContent=insertError.message;return;}
+        const fallbackName = (data.user.user_metadata?.display_name || email.split('@')[0]).slice(0, 20);
+        const { error: insertError } = await cloudClient.from('profiles').insert({ id: data.user.id, display_name: fallbackName, role: 'player' });
+        if(insertError){ msg.className = 'auth-msg err'; msg.textContent = insertError.message; return; }
       }
-      currentUser=data.user.id;await fetchCloudStages();await cloudLoadStudentState();showToast('مرحبًا بعودتك 👋');
+      currentUser = data.user.id;
+      localStorage.setItem(STORAGE_SESSION, currentUser);
+      await fetchCloudStages();
+      await cloudLoadStudentState();
+      showToast('مرحبًا بعودتك 👋');
     }
   };
 
   window.switchAuth = function(mode){
-    authMode=mode;
-    $('loginTab').classList.toggle('active',mode==='login');
-    $('registerTab').classList.toggle('active',mode==='register');
-    $('registerNameWrap').classList.toggle('hidden',mode!=='register');
-    $('authNameLabel').textContent=mode==='register'?'البريد الإلكتروني':'البريد الإلكتروني';
-    $('authName').placeholder='مثال: ahmed@gmail.com';
-    $('authName').type='email';
-    $('authPass').autocomplete=mode==='register'?'new-password':'current-password';
-    $('authSubmit').textContent=mode==='register'?'إنشاء الحساب والبدء 🎮':'دخول إلى اللعبة 🚀';
-    $('authMsg').textContent='';
+    authMode = mode;
+    $('loginTab').classList.toggle('active', mode === 'login');
+    $('registerTab').classList.toggle('active', mode === 'register');
+    $('registerNameWrap').classList.toggle('hidden', mode !== 'register');
+    $('authNameLabel').textContent = mode === 'register' ? 'البريد الإلكتروني' : 'البريد الإلكتروني';
+    $('authName').placeholder = 'مثال: ahmed@gmail.com';
+    $('authName').type = 'email';
+    $('authPass').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+    $('authSubmit').textContent = mode === 'register' ? 'إنشاء الحساب والبدء 🎮' : 'دخول إلى اللعبة 🚀';
+    $('authMsg').textContent = '';
   };
 
   window.logout = async function(){
-    try{stopQuestionTimerV5();if(cloudClient)await cloudClient.auth.signOut();}catch(e){} currentUser=null;localStorage.removeItem(STORAGE_SESSION);$('authOverlay').classList.remove('hidden');switchAuth('login');showToast('تم تسجيل الخروج');
+    try {
+      if(typeof stopQuestionTimerV5 === 'function') stopQuestionTimerV5();
+      if(cloudClient) await cloudClient.auth.signOut();
+    } catch(e){}
+    currentUser = null;
+    state.currentAttemptId = null;
+    localStorage.removeItem(STORAGE_SESSION);
+    $('authOverlay').classList.remove('hidden');
+    switchAuth('login');
+    showToast('تم تسجيل الخروج');
   };
 
+  // 22. Boot online layer
   async function bootOnline(){
-    if(!cloudClient)return;
-    try{
-      const {data:{session}}=await cloudClient.auth.getSession();
-      if(session?.user){currentUser=session.user.id;await fetchCloudStages();await cloudLoadStudentState();}
-      else{await fetchCloudStages();renderStages();await renderLeaderboard();}
-    }catch(e){console.warn('online boot failed',e);showToast('تعذر تحميل بيانات اللعبة من الخادم.');}
-  }
-
-  setTimeout(bootOnline,250);
-  if($('newStageTime')){ /* no-op; form is bound through onsubmit */ }
-})();
-</script>
-
-<script>
-/* ===== v6: one-attempt paid/granted stages + student reports ===== */
-(() => {
-  const DB = window.__ismAlfailOnline = window.__ismAlfailOnline || {};
-  let reportsUsers = [];
-
-  function currentUserId(){ return currentUser || null; }
-  async function getAuthUser(){ if(!cloudClient)return null; const {data:{user}}=await cloudClient.auth.getUser(); return user||null; }
-
-  async function startStageAttempt(stageId){
-    const u=await getAuthUser(); if(!u) return null;
-    const {data,error}=await cloudClient.rpc('start_stage_attempt',{p_stage_id:stageId});
-    if(error){ showToast(error.message || 'تعذر بدء المحاولة.'); return null; }
-    return data;
-  }
-  async function finishStageAttempt(){
-    if(!state.currentAttemptId || !cloudClient)return;
-    const {error}=await cloudClient.rpc('finish_stage_attempt',{p_attempt_id:state.currentAttemptId});
-    if(error) console.warn('finish_stage_attempt',error);
-  }
-
-  const _oldSetStageV6 = window.setStage;
-  window.setStage = async function(i){
-    if(!DB.stages?.[i])return;
-    if(!userCanAccessOnline(i)){showToast(`🔒 المرحلة مغلقة — السعر ${Number(DB.stages[i]?.price||0).toLocaleString('ar-EG')} جنيه`);return;}
-    stopQuestionTimerV5();
-    const st=DB.stages[i];
-    const start=await startStageAttempt(st.dbId);
-    if(!start)return;
-    state.stageIndex=i;state.questionIndex=0;state.idx=0;state.answered=false;
-    state.currentAttemptId=start.attempt_id||start.id;
-    await saveOnlineProgress();renderStages();loadQ();
-    showToast(start.resumed?`تم استكمال محاولة «${st.name}»`:`بدأت المحاولة المسموح بها في «${st.name}»`);
-  };
-
-  // For the first stage when the game boots, create an attempt only if necessary.
-  const _oldLoadQv6=window.loadQ;
-  window.loadQ = async function(){
-    stopQuestionTimerV5();
-    const st=currentStageOnline();
-    if(!st || !st.questions?.length){
-      $('questionText').textContent='لا توجد أسئلة منشورة في هذه المرحلة حاليًا.';$('choices').innerHTML='';$('nextBtn').disabled=true;return;
-    }
-    if(!state.currentAttemptId){
-      const start=await startStageAttempt(st.dbId);
-      if(!start){ $('questionText').textContent='تعذر بدء المحاولة. أعد المحاولة أو تواصل مع المدير.'; $('choices').innerHTML=''; $('nextBtn').disabled=true; return; }
-      state.currentAttemptId=start.attempt_id || start.id;
-    }
-    const limit=Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length);
-    const qi=(state.questionIndex||0)%limit, q=st.questions[qi];
-    state.current=[q.text,...q.options]; state.currentQuestionId=q.id;
-    state.currentAttemptId=state.currentAttemptId;
-    state.currentQuestionAttemptId=crypto?.randomUUID ? crypto.randomUUID() : String(Date.now());
-    state.answered=false; questionTimedOutV5=false;
-    $('stageTitle').textContent=`${st.name} • ⏱️ ${st.timeLimit}ث`;$('qNum').textContent=`${qi+1} / ${limit}`;$('questionText').textContent=q.text;$('feedback').className='feedback';$('feedback').textContent='';$('nextBtn').disabled=true;
-    const opts=shuffle(q.options.map((x,i)=>({text:x,correct:i===q.answer,index:i})));
-    $('choices').innerHTML=opts.map((o,i)=>`<button class="choice" data-answer-index="${o.index}" data-correct="${o.correct}" onclick="answer(this)">${['أ','ب','ج','د'][i]}) ${escapeHTML(o.text)}</button>`).join('');
-    resetQuestionTimerV5();
-  };
-
-  window.recordAnswerOnlineV6 = async function(questionId,selectedIndex,elapsed){
-    if(!cloudClient||!currentUser||!state.currentAttemptId)return null;
-    const choice = selectedIndex===null ? null : ['a','b','c','d'][Math.max(0,Math.min(3,Number(selectedIndex)||0))];
-    const {data,error}=await cloudClient.rpc('record_game_answer',{p_attempt_id:state.currentAttemptId,p_question_id:questionId,p_selected_choice:choice,p_elapsed_seconds:Number(Math.max(0,elapsed).toFixed(3))});
-    if(error){console.warn('record_game_answer',error);return null;} return data;
-  };
-
-  window.answer = async function(el){
-    if(state.answered||questionTimedOutV5)return;
-    const elapsed=(Date.now()-questionStartedAtV5)/1000, limit=getCurrentQuestionTimeV5();
-    if(elapsed>=limit){await window.timeoutQuestionV6();return;}
-    stopQuestionTimerV5(); state.answered=true; $('nextBtn').disabled=false;
-    const selected=Number(el.dataset.answerIndex);
-    document.querySelectorAll('.choice').forEach(b=>{b.classList.add('disabled');if(b.dataset.correct==='true')b.classList.add('correct')});
-    const result=await recordAnswerOnlineV6(state.currentQuestionId,selected,elapsed);
-    if(!result){state.answered=false;$('nextBtn').disabled=true;showFeedback(false,'تعذر حفظ الإجابة على الخادم. حاول مرة أخرى.');return;}
-    if(result.correct){el.classList.add('correct');const earned=Number(result.points||0);state.score=Number(result.score??state.score);state.stars=Number(result.stars??state.stars);state.coins=Number(result.coins??state.coins);state.streak++;showFeedback(true,`إجابة صحيحة! حصلت على <b>${earned}</b> نقطة لأنك أجبت خلال ${Math.floor(elapsed)} ثانية.`)}
-    else{el.classList.add('wrong');state.score=Number(result.score??state.score);state.stars=Number(result.stars??state.stars);state.coins=Number(result.coins??state.coins);state.energy=Math.max(0,state.energy-1);state.streak=0;showFeedback(false,'ليست الإجابة الصحيحة. حصلت على 0 نقطة. راجع القاعدة وحاول في السؤال التالي.')}
-    await saveOnlineProgress();renderStages();renderLeaderboard();updateUI();
-  };
-
-  window.timeoutQuestionV6 = async function(){
-    if(state.answered||questionTimedOutV5)return;
-    questionTimedOutV5=true;state.answered=true;stopQuestionTimerV5();$('nextBtn').disabled=true;
-    const limit=getCurrentQuestionTimeV5();
-    const result=await recordAnswerOnlineV6(state.currentQuestionId,null,limit);
-    if(result){state.score=Number(result.score??state.score);state.stars=Number(result.stars??state.stars);state.coins=Number(result.coins??state.coins);}
-    state.streak=0;state.energy=Math.max(0,state.energy-1);document.querySelectorAll('.choice').forEach(b=>{b.classList.add('disabled');if(b.dataset.correct==='true')b.classList.add('correct')});
-    showFeedback(false,'⏰ انتهى الوقت! اعتُبر السؤال خطأ. سيتم الانتقال إلى المرحلة التالية.');
-    await saveOnlineProgress();renderLeaderboard();updateUI();
-    setTimeout(async()=>{
-      await finishStageAttempt();
-      const ni=(state.stageIndex||0)+1;
-      if(ni<DB.stages.length && userCanAccessOnline(ni)){
-        const start=await startStageAttempt(DB.stages[ni].dbId);if(!start)return;
-        state.stageIndex=ni;state.questionIndex=0;state.answered=false;state.currentAttemptId=start.attempt_id||start.id;
-        await saveOnlineProgress();renderStages();loadQ();showToast(`⏰ انتهى الوقت — انتقلت إلى: ${DB.stages[ni].name}`);
-      }else{
-        await finishStageAttempt();state.questionIndex=0;await saveOnlineProgress();showStageCompleteV4();
+    if(!cloudClient) return;
+    try {
+      const { data: { session } } = await cloudClient.auth.getSession();
+      if(session?.user){
+        currentUser = session.user.id;
+        await fetchCloudStages();
+        await cloudLoadStudentState();
+      } else {
+        await fetchCloudStages();
+        renderStages();
+        await renderLeaderboard();
       }
-    },700);
-  };
-
-  window.next = async function(){
-    stopQuestionTimerV5(); const st=currentStageOnline();if(!st)return;
-    const limit=Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length);
-    state.questionIndex=(state.questionIndex||0)+1; await saveOnlineProgress();
-    if(state.questionIndex>=limit){await finishStageAttempt();state.questionIndex=0;await saveOnlineProgress();showStageCompleteV4();return;}
-    renderStages();loadQ();
-  };
-
-  window.skip = async function(){
-    stopQuestionTimerV5();state.streak=0;state.questionIndex=(state.questionIndex||0)+1;await saveOnlineProgress();
-    const st=currentStageOnline(),limit=st?Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length):1;
-    if(state.questionIndex>=limit){await finishStageAttempt();state.questionIndex=0;await saveOnlineProgress();showStageCompleteV4();}else{loadQ();}showToast('تم تخطي السؤال');
-  };
-
-  // Replace access check to distinguish one-time access: access itself remains valid for resume, but no new attempt after completion.
-  const _oldRenderStages=window.renderStages;
-  window.renderStages = function(){
-    const list=DB.stages||[]; if(!list.length){$('levels').innerHTML='<div class="empty-rank">لا توجد مراحل منشورة حاليًا.</div>';return;}
-    const idx=state.stageIndex||0;
-    $('levels').innerHTML=list.map((st,i)=>{
-      const access=userCanAccessOnline(i), count=Math.max(1,Math.min(st.question_count||st.questions.length||1,st.questions.length||st.question_count||1));
-      const isDoneOneTime = !!DB.oneTimeCompleted?.has(String(st.dbId));
-      const lockedByUsed = st.access==='paid' && !adminLoggedV4 && isDoneOneTime;
-      const can=access && !lockedByUsed;
-      const progress=i<idx?100:i===idx?Math.min(99,Math.round(((state.questionIndex||0)/Math.max(1,count))*100)):0;
-      let badge=st.access==='free'?'<span class="free-badge">مجاني</span>':(lockedByUsed?'<span class="lock-badge">✅ استُخدمت المحاولة</span>':(can?'<span class="free-badge">تم الفتح</span>':`<span class="lock-badge">🔒 ${Number(st.price||0).toLocaleString('ar-EG')} جنيه</span>`));
-      return `<button class="level ${st.color||'l1'} ${can?'':'stage-lock'}" onclick="setStage(${i})"><div>${i+1}. ${escapeHTML(st.name)}</div><div style="opacity:.9;font-size:13px">${count} سؤالًا • ⏱️ ${st.timeLimit}ث</div>${badge}<div class="progress"><i style="width:${progress}%"></i></div></button>`;
-    }).join('');
-  };
-
-  async function refreshOneTimeCompleted(){
-    DB.oneTimeCompleted=new Set(); if(!cloudClient||!currentUser)return;
-    const {data}=await cloudClient.from('stage_access').select('stage_id,attempts_used,max_attempts').eq('player_id',currentUser);
-    (data||[]).forEach(r=>{if(Number(r.attempts_used||0)>=Number(r.max_attempts||1))DB.oneTimeCompleted.add(String(r.stage_id));});
+    } catch(e) {
+      console.warn('online boot failed:', e);
+      if(typeof showToast === 'function') showToast('تعذر تحميل بيانات اللعبة من الخادم.');
+    }
   }
 
-  // Admin reports
-  window.populateReportSelectors = async function(){
-    if(!adminLoggedV4||!cloudClient)return;
-    const {data,error}=await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins,created_at').order('display_name',{ascending:true});
-    if(error){showToast(error.message);return;} reportsUsers=data||[];
-    $('reportUserSelect').innerHTML=reportsUsers.map((u,i)=>`<option value="${u.id}">${escapeHTML(u.display_name||'لاعب')} — ${Number(u.total_score||0)} نقطة</option>`).join('') || '<option value="">لا يوجد لاعبون</option>';
-    $('reportStageSelect').innerHTML='<option value="">كل المراحل</option>'+(DB.stages||[]).map(s=>`<option value="${s.dbId}">${escapeHTML(s.name)}</option>`).join('');
-    await loadStudentReport();
-  };
-  window.loadStudentReport = async function(){
-    const uid=$('reportUserSelect')?.value;if(!uid)return;
-    const sid=$('reportStageSelect')?.value||'';
-    let q=cloudClient.from('stage_attempts').select('id,player_id,stage_id,attempt_no,status,started_at,completed_at,score_earned,stars_earned,stages(title)').eq('player_id',uid).order('started_at',{ascending:false});
-    if(sid)q=q.eq('stage_id',sid);
-    const {data:attempts,error}=await q;if(error){$('studentReportList').innerHTML=`<div class="empty-rank">${escapeHTML(error.message)}</div>`;return;}
-    const totalAttempts=(attempts||[]).length, totalScore=(attempts||[]).reduce((a,x)=>a+Number(x.score_earned||0),0), totalStars=(attempts||[]).reduce((a,x)=>a+Number(x.stars_earned||0),0);
-    $('studentReportSummary').innerHTML=`<div class="report-kpi">المحاولات<br><b>${totalAttempts}</b></div><div class="report-kpi">نقاط هذه المرحلة/المراحل<br><b>${totalScore}</b></div><div class="report-kpi">النجوم<br><b>${totalStars}</b></div><div class="report-kpi">الحالة<br><b>تقارير محفوظة</b></div>`;
-    if(!attempts?.length){$('studentReportList').innerHTML='<div class="empty-rank">لا توجد محاولات مسجلة لهذا الطالب.</div>';return;}
-    const ids=attempts.map(a=>a.id);const {data:ans,error:ae}=await cloudClient.from('player_answers').select('attempt_id,question_id,selected_choice,is_correct,points,elapsed_seconds,created_at,questions(question_text,choice_a,choice_b,choice_c,choice_d,correct_choice),stages(title)').in('attempt_id',ids).order('created_at',{ascending:true});
-    if(ae){$('studentReportList').innerHTML=`<div class="empty-rank">${escapeHTML(ae.message)}</div>`;return;}
-    const by=new Map();(ans||[]).forEach(a=>{if(!by.has(a.attempt_id))by.set(a.attempt_id,[]);by.get(a.attempt_id).push(a)});
-    const letter={a:'أ',b:'ب',c:'ج',d:'د'};
-    $('studentReportList').innerHTML=(attempts||[]).map(a=>{
-      const arr=by.get(a.id)||[], st=a.status==='completed'?'مكتملة':a.status==='abandoned'?'متروكة':'نشطة';
-      const table=arr.length?`<div class="attempt-answers"><table class="report-table"><thead><tr><th>#</th><th>السؤال</th><th>إجابة الطالب</th><th>الصحيحة</th><th>النتيجة</th><th>الزمن</th></tr></thead><tbody>${arr.map((x,j)=>{const q=x.questions||{};const selected=x.selected_choice?`${letter[x.selected_choice]||x.selected_choice}) ${q['choice_'+x.selected_choice]||''}`:'لم يجب';const correct=`${letter[q.correct_choice]||q.correct_choice}) ${q['choice_'+q.correct_choice]||''}`;const cls=x.is_correct?'report-correct':(!x.selected_choice?'report-timeout':'report-wrong');return `<tr><td>${j+1}</td><td>${escapeHTML(q.question_text||'')}</td><td>${escapeHTML(selected)}</td><td>${escapeHTML(correct)}</td><td class="${cls}">${x.is_correct?`✅ ${x.points} نقطة`:(!x.selected_choice?'⏰ انتهى الوقت':'❌ خطأ')}</td><td>${Number(x.elapsed_seconds||0).toFixed(1)}ث</td></tr>`}).join('')}</tbody></table></div>`:'<div class="small">لا توجد إجابات محفوظة.</div>';
-      return `<div class="attempt-card"><div class="attempt-head"><b>📘 ${escapeHTML(a.stages?.title||'مرحلة')} — محاولة ${a.attempt_no}</b><span>${st} | ⭐ ${Number(a.score_earned||0)} نقطة</span></div><div class="small">بدأت: ${new Date(a.started_at).toLocaleString('ar-EG')} ${a.completed_at?` — انتهت: ${new Date(a.completed_at).toLocaleString('ar-EG')}`:''}</div>${table}</div>`;
-    }).join('');
-  };
-
-  const _oldShowAdminTabV6=window.showAdminTab;
-  window.showAdminTab = async function(tab){
-    const tabs=['stages','questions','users','reports','payments'];
-    tabs.forEach(k=>{const id='admin'+k.charAt(0).toUpperCase()+k.slice(1)+'Tab';if($(id))$(id).classList.toggle('hidden',k!==tab);const el=$('adminTab'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.classList.toggle('active',k===tab)});
-    activeAdminTab=tab;
-    if(tab==='stages')await renderAdminStages();
-    if(tab==='questions'){await renderAdminStageSelectors();await renderAdminQuestions();}
-    if(tab==='users')await renderAdminUsers();
-    if(tab==='reports')await populateReportSelectors();
-    if(tab==='payments')await renderAdminPayments();
-  };
-  const _oldShowOnlineAdminPanel=window.showOnlineAdminPanel;
-  // Ensure the reports selector gets populated after admin opens.
-  if(window.showOnlineAdminPanel){
-    const orig=window.showOnlineAdminPanel;
-    window.showOnlineAdminPanel=async function(){await orig(); if(activeAdminTab==='reports')await populateReportSelectors();};
-  }
+  setTimeout(bootOnline, 100);
 })();
+
 </script>
 </body></html>
