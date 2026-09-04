@@ -124,6 +124,82 @@ body{background:#1696e4;}
 @media(max-width:650px){.quiz-head{gap:6px;flex-wrap:wrap}.quiz-timer{order:3;width:100%;}.question-card{padding:11px 10px}.choice{padding:8px 10px;font-size:16px}.actions{margin-top:8px}}
 
 </style>
+
+<style>
+/* ===== Final mobile layout fix ===== */
+@media (max-width: 700px){
+  html,body{width:100%;min-width:0;overflow-x:hidden;-webkit-text-size-adjust:100%;}
+  body{padding-bottom:12px;}
+  .reference-art{display:none!important;}
+  .app{width:100%;max-width:100%;padding:8px 8px 92px;margin:0;}
+  .top{display:flex!important;flex-direction:column!important;gap:8px!important;width:100%;}
+  .brand,.hud,.player{width:100%;max-width:100%;border-radius:16px;box-shadow:0 5px 0 rgba(99,58,27,.9),0 10px 20px rgba(26,53,71,.16);}
+  .brand{justify-content:center!important;text-align:center;flex-wrap:wrap;padding:8px 10px;}
+  .brand-logo{width:110px;height:64px;}
+  .brand h1{font-size:27px;line-height:1.1;}
+  .brand p{font-size:13px;margin:3px 0;}
+  .author-credit{font-size:10px;}
+  .hud{order:2;display:grid!important;grid-template-columns:repeat(3,1fr);gap:4px;padding:7px 8px;}
+  .hud .stat{display:flex!important;flex-direction:column;gap:1px;grid-template-columns:none;}
+  .hud .stat b{font-size:21px;}
+  .hud .stat span{font-size:11px;}
+  .player{order:3;justify-content:center;padding:7px 9px;}
+  .avatar{width:50px;height:50px;}
+  .layout{display:flex!important;flex-direction:column!important;width:100%;gap:9px;margin-top:9px!important;}
+  .layout>aside:first-child{order:1;width:100%;}
+  .layout>.quiz{order:2;width:100%;}
+  .layout>aside:last-child{order:3;width:100%;}
+  .panel{width:100%;max-width:100%;padding:11px;border-radius:16px;}
+  .panel h2,.panel h3{font-size:16px;margin-bottom:7px;}
+  .levels{grid-template-columns:1fr;gap:7px;}
+  .level{width:100%;padding:10px 11px;font-size:15px;border-radius:13px;min-height:66px;}
+  .level:after{font-size:18px;top:3px;left:7px;}
+  .progress{height:7px;margin-top:5px;}
+  .feature{padding:9px;margin:6px 0;font-size:13px;border-radius:12px;}
+  .quiz{min-height:0!important;}
+  .quiz:before{width:56%;height:30px;top:-8px;}
+  .quiz-head{gap:6px;flex-wrap:wrap;padding-top:3px;}
+  .pill{padding:6px 9px;font-size:12px;}
+  .quiz-timer{order:3;width:100%;min-width:0;font-size:13px;padding:6px 9px;}
+  .question-card{margin-top:8px;padding:10px 9px;border-radius:14px;box-shadow:inset 0 2px 0 #fff,0 4px 8px rgba(108,62,28,.12);}
+  .question{font-size:18px!important;line-height:1.55!important;}
+  .choices{gap:7px;margin-top:10px;}
+  .choice{padding:9px 10px;font-size:16px;border-width:2px;border-radius:11px;box-shadow:0 2px 0 #d9bd8d;}
+  .feedback{margin-top:8px;padding:8px 9px;font-size:13px;}
+  .actions{gap:7px;margin-top:7px;}
+  .actions .btn{padding:9px 11px;font-size:13px;border-radius:11px;}
+  .install-banner{margin:9px 0;padding:10px;border-radius:13px;box-shadow:0 4px 0 #2d1b68;}
+  .install-banner strong{font-size:14px;}
+  .install-banner span{font-size:11px;}
+  .payment-box{margin-top:9px;padding:10px;border-radius:13px;}
+  .payment-number{font-size:18px;padding:8px;}
+  .admin-launch{left:8px!important;bottom:8px!important;padding:9px 12px!important;border-radius:12px!important;font-size:13px!important;}
+  .admin-card{max-height:94vh;padding:12px;border-radius:18px;}
+  .admin-grid{grid-template-columns:1fr!important;gap:8px!important;}
+  .admin-head{gap:8px;flex-wrap:wrap;}
+  .admin-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .admin-actions button{flex:1;min-width:110px;}
+  .auth-overlay{padding:10px;align-items:flex-start;overflow:auto;}
+  .auth-card{width:100%;max-width:520px;margin:18px auto;padding:17px;border-radius:19px;}
+  .auth-brand{width:76px;height:76px;}
+  .auth-card h2{font-size:22px;}
+  .auth-card p{font-size:13px;line-height:1.5;}
+  .auth-tabs{margin:12px 0 10px;}
+  .auth-tabs button{padding:10px;font-size:14px;}
+  .auth-form{gap:9px;}
+  .auth-form label{font-size:14px;}
+  .auth-form input{padding:11px;font-size:16px;border-radius:11px;}
+  .auth-submit{padding:12px;font-size:15px;border-radius:12px;}
+  .game-credit img{width:36px;height:36px;}
+}
+@media (min-width:701px) and (max-width:980px){
+  .layout{grid-template-columns:1fr!important;}
+  .top{grid-template-columns:1fr!important;}
+}
+</style>
+<style>
+.admin-from-auth{width:100%;border:2px solid #d3a03b;background:#fff4d2;color:#5b361d;padding:11px 14px;border-radius:14px;font-weight:900;cursor:pointer;margin-top:10px}.report-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.report-kpi{background:#f6eddc;border:1px solid #dec99e;border-radius:12px;padding:10px;text-align:center;font-weight:900}.report-table{width:100%;border-collapse:collapse;background:#fff}.report-table th,.report-table td{border-bottom:1px solid #ead9b8;padding:8px;text-align:right;vertical-align:top}.report-correct{color:#2c7a18;font-weight:900}.report-wrong{color:#a52d2d;font-weight:900}.report-timeout{color:#925400;font-weight:900}.attempt-card{background:#f7eedf;border:1px solid #ddc89e;border-radius:14px;padding:10px;margin-bottom:10px}.attempt-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.attempt-answers{margin-top:8px;overflow:auto}@media(max-width:650px){.report-summary{grid-template-columns:1fr 1fr}.admin-form[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}}
+</style>
 </head>
 <body class="game-skin">
 <div class="reference-art" aria-hidden="true"><img class="art-char" src="hero-character.png"><img class="art-castle" src="castle.png"><img class="art-wizard" src="wizard.png"></div>
@@ -139,7 +215,8 @@ body{background:#1696e4;}
       <div><label for="authPass">كلمة السر</label><input id="authPass" type="password" minlength="6" required autocomplete="current-password" placeholder="6 أحرف على الأقل"></div>
       <div class="auth-msg" id="authMsg"></div><button class="auth-submit" id="authSubmit">دخول إلى اللعبة 🚀</button>
     </form>
-    <div class="small" style="margin-top:14px">الحسابات والنتائج والبيانات الأساسية محفوظة أونلاين عبر Supabase.</div>
+    <button type="button" class="admin-from-auth" onclick="openAdmin()">🛡️ دخول مدير اللعبة</button>
+    <div class="small" style="margin-top:10px">الحسابات والنتائج والبيانات الأساسية محفوظة أونلاين عبر Supabase.</div>
   </div>
 </div>
 <div class="app">
@@ -234,6 +311,7 @@ body{background:#1696e4;}
         <button id="adminTabStages" class="active" onclick="showAdminTab('stages')">🗺️ المراحل</button>
         <button id="adminTabQuestions" onclick="showAdminTab('questions')">❓ الأسئلة</button>
         <button id="adminTabUsers" onclick="showAdminTab('users')">👥 اللاعبين</button>
+        <button id="adminTabReports" onclick="showAdminTab('reports')">📊 تقارير الطلاب</button>
         <button id="adminTabPayments" class="admin-tab-payments" onclick="showAdminTab('payments')">💳 المدفوعات <span class="count" id="paymentPendingCount">0</span></button>
       </div>
       <div id="adminStageTab">
@@ -250,6 +328,18 @@ body{background:#1696e4;}
       </div>
       <div id="adminUsersTab" class="hidden">
         <section class="admin-section"><h3>👥 اللاعبين المسجلين</h3><p class="small">إدارة اللاعبين والصلاحيات تتم من قاعدة البيانات المركزية.</p><div id="adminUsersList" class="admin-list"></div></section>
+      </div>
+      <div id="adminReportsTab" class="hidden">
+        <section class="admin-section">
+          <h3>📊 تقارير الطلاب وإجاباتهم</h3>
+          <p class="small">اطّلع على درجة كل طالب في كل مرحلة، وإجاباته الصحيحة والخاطئة وزمن الإجابة.</p>
+          <div class="admin-form" style="grid-template-columns:1fr 1fr;display:grid;gap:10px;margin-bottom:12px">
+            <div><label>الطالب</label><select id="reportUserSelect" onchange="loadStudentReport()"></select></div>
+            <div><label>المرحلة</label><select id="reportStageSelect" onchange="loadStudentReport()"></select></div>
+          </div>
+          <div id="studentReportSummary" class="report-summary"></div>
+          <div id="studentReportList" class="admin-list"></div>
+        </section>
       </div>
       <div id="adminPaymentsTab" class="hidden">
         <section class="admin-section"><h3>💳 طلبات الدفع</h3><p class="small">راجع التحويلات الواردة إلى 01116544383 ثم وافق أو ارفض الطلب، وسيُحفظ القرار على جميع أجهزة اللاعب.</p><div id="adminPaymentsList" class="admin-list"></div></section>
@@ -461,7 +551,20 @@ function next(){
 }
 
 function showStageCompleteV4(){const st=currentStageDataV4();$('finalStars').textContent='★★★★★';$('finalText').textContent=`أكملت مرحلة «${st.name}» بنجاح وحصلت حتى الآن على ${state.score} نقطة. تم حفظ تقدمك.`;$('modal').style.display='flex';renderLeaderboard();}
-function closeModal(){ $('modal').style.display='none'; renderStages(); loadQ(); }
+async function closeModal(){
+  $('modal').style.display='none';
+  const current=state.stageIndex||0;
+  const nextIndex=DB.stages.findIndex((_,i)=>i>current && userCanAccessOnline(i));
+  if(nextIndex>=0){
+    await window.setStage(nextIndex);
+  }else{
+    state.currentAttemptId=null;
+    renderStages();
+    $('questionText').textContent='اختر مرحلة أخرى من القائمة لبدء تدريب جديد.';
+    $('choices').innerHTML='';
+    $('nextBtn').disabled=true;
+  }
+}
 function saveUser(){if(!currentUser)return;const users=readUsers();if(!users[currentUser])return;users[currentUser]={...users[currentUser],score:state.score,stars:state.stars,coins:state.coins,energy:state.energy,streak:state.streak,idx:state.idx,stage:((state.stageIndex||0)+1),stageIndex:state.stageIndex||0,questionIndex:state.questionIndex||0,lastPlayed:Date.now()};saveUsers(users)}
 function loadUser(){const u=readUsers()[currentUser];if(!u){logout();return}state={idx:0,score:u.score||0,stars:u.stars||0,coins:u.coins||0,energy:u.energy??25,streak:u.streak||0,answered:false,current:null,stage:(u.stageIndex??0)+1,stageIndex:u.stageIndex??0,questionIndex:u.questionIndex??0};$('playerName').textContent=u.name;$('userBadge').textContent='حساب محفوظ';$('authOverlay').classList.add('hidden');renderStages();renderLeaderboard();loadQ();updateUI()}
 async function handleAuth(e){e.preventDefault();const name=$('authName').value.trim().replace(/\s+/g,' '),pass=$('authPass').value;const msg=$('authMsg');if(name.length<2){msg.className='auth-msg err';msg.textContent='اكتب اسم لاعب من حرفين على الأقل.';return}if(pass.length<4){msg.className='auth-msg err';msg.textContent='كلمة السر يجب أن تكون 4 أحرف على الأقل.';return}const key=name.toLowerCase(),users=readUsers();if(authMode==='register'){if(users[key]){msg.className='auth-msg err';msg.textContent='اسم اللاعب مستخدم بالفعل. اختر اسمًا آخر.';return}users[key]={name,passHash:await hashPass(pass),score:0,stars:0,coins:0,energy:25,streak:0,stage:1,stageIndex:0,questionIndex:0,unlockedStages:[],lastPlayed:Date.now()};saveUsers(users);currentUser=key;localStorage.setItem(STORAGE_SESSION,key);loadUser();showToast('تم إنشاء الحساب بنجاح 🎉')}else{if(!users[key]){msg.className='auth-msg err';msg.textContent='اسم اللاعب غير موجود.';return}const hp=await hashPass(pass);if(users[key].passHash!==hp){msg.className='auth-msg err';msg.textContent='كلمة السر غير صحيحة.';return}currentUser=key;localStorage.setItem(STORAGE_SESSION,key);loadUser();showToast('مرحبًا بعودتك 👋')}}
@@ -1073,6 +1176,194 @@ setTimeout(()=>{ renderCloudLeaderboard(); if(cloudClient){cloudClient.auth.getS
 
   setTimeout(bootOnline,250);
   if($('newStageTime')){ /* no-op; form is bound through onsubmit */ }
+})();
+</script>
+
+<script>
+/* ===== v6: one-attempt paid/granted stages + student reports ===== */
+(() => {
+  const DB = window.__ismAlfailOnline = window.__ismAlfailOnline || {};
+  let reportsUsers = [];
+
+  function currentUserId(){ return currentUser || null; }
+  async function getAuthUser(){ if(!cloudClient)return null; const {data:{user}}=await cloudClient.auth.getUser(); return user||null; }
+
+  async function startStageAttempt(stageId){
+    const u=await getAuthUser(); if(!u) return null;
+    const {data,error}=await cloudClient.rpc('start_stage_attempt',{p_stage_id:stageId});
+    if(error){ showToast(error.message || 'تعذر بدء المحاولة.'); return null; }
+    return data;
+  }
+  async function finishStageAttempt(){
+    if(!state.currentAttemptId || !cloudClient)return;
+    const {error}=await cloudClient.rpc('finish_stage_attempt',{p_attempt_id:state.currentAttemptId});
+    if(error) console.warn('finish_stage_attempt',error);
+  }
+
+  const _oldSetStageV6 = window.setStage;
+  window.setStage = async function(i){
+    if(!DB.stages?.[i])return;
+    if(!userCanAccessOnline(i)){showToast(`🔒 المرحلة مغلقة — السعر ${Number(DB.stages[i]?.price||0).toLocaleString('ar-EG')} جنيه`);return;}
+    stopQuestionTimerV5();
+    const st=DB.stages[i];
+    const start=await startStageAttempt(st.dbId);
+    if(!start)return;
+    state.stageIndex=i;state.questionIndex=0;state.idx=0;state.answered=false;
+    state.currentAttemptId=start.attempt_id||start.id;
+    await saveOnlineProgress();renderStages();loadQ();
+    showToast(start.resumed?`تم استكمال محاولة «${st.name}»`:`بدأت المحاولة المسموح بها في «${st.name}»`);
+  };
+
+  // For the first stage when the game boots, create an attempt only if necessary.
+  const _oldLoadQv6=window.loadQ;
+  window.loadQ = async function(){
+    stopQuestionTimerV5();
+    const st=currentStageOnline();
+    if(!st || !st.questions?.length){
+      $('questionText').textContent='لا توجد أسئلة منشورة في هذه المرحلة حاليًا.';$('choices').innerHTML='';$('nextBtn').disabled=true;return;
+    }
+    if(!state.currentAttemptId){
+      const start=await startStageAttempt(st.dbId);
+      if(!start){ $('questionText').textContent='تعذر بدء المحاولة. أعد المحاولة أو تواصل مع المدير.'; $('choices').innerHTML=''; $('nextBtn').disabled=true; return; }
+      state.currentAttemptId=start.attempt_id || start.id;
+    }
+    const limit=Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length);
+    const qi=(state.questionIndex||0)%limit, q=st.questions[qi];
+    state.current=[q.text,...q.options]; state.currentQuestionId=q.id;
+    state.currentAttemptId=state.currentAttemptId;
+    state.currentQuestionAttemptId=crypto?.randomUUID ? crypto.randomUUID() : String(Date.now());
+    state.answered=false; questionTimedOutV5=false;
+    $('stageTitle').textContent=`${st.name} • ⏱️ ${st.timeLimit}ث`;$('qNum').textContent=`${qi+1} / ${limit}`;$('questionText').textContent=q.text;$('feedback').className='feedback';$('feedback').textContent='';$('nextBtn').disabled=true;
+    const opts=shuffle(q.options.map((x,i)=>({text:x,correct:i===q.answer,index:i})));
+    $('choices').innerHTML=opts.map((o,i)=>`<button class="choice" data-answer-index="${o.index}" data-correct="${o.correct}" onclick="answer(this)">${['أ','ب','ج','د'][i]}) ${escapeHTML(o.text)}</button>`).join('');
+    resetQuestionTimerV5();
+  };
+
+  window.recordAnswerOnlineV6 = async function(questionId,selectedIndex,elapsed){
+    if(!cloudClient||!currentUser||!state.currentAttemptId)return null;
+    const choice = selectedIndex===null ? null : ['a','b','c','d'][Math.max(0,Math.min(3,Number(selectedIndex)||0))];
+    const {data,error}=await cloudClient.rpc('record_game_answer',{p_attempt_id:state.currentAttemptId,p_question_id:questionId,p_selected_choice:choice,p_elapsed_seconds:Number(Math.max(0,elapsed).toFixed(3))});
+    if(error){console.warn('record_game_answer',error);return null;} return data;
+  };
+
+  window.answer = async function(el){
+    if(state.answered||questionTimedOutV5)return;
+    const elapsed=(Date.now()-questionStartedAtV5)/1000, limit=getCurrentQuestionTimeV5();
+    if(elapsed>=limit){await window.timeoutQuestionV6();return;}
+    stopQuestionTimerV5(); state.answered=true; $('nextBtn').disabled=false;
+    const selected=Number(el.dataset.answerIndex);
+    document.querySelectorAll('.choice').forEach(b=>{b.classList.add('disabled');if(b.dataset.correct==='true')b.classList.add('correct')});
+    const result=await recordAnswerOnlineV6(state.currentQuestionId,selected,elapsed);
+    if(!result){state.answered=false;$('nextBtn').disabled=true;showFeedback(false,'تعذر حفظ الإجابة على الخادم. حاول مرة أخرى.');return;}
+    if(result.correct){el.classList.add('correct');const earned=Number(result.points||0);state.score=Number(result.score??state.score);state.stars=Number(result.stars??state.stars);state.coins=Number(result.coins??state.coins);state.streak++;showFeedback(true,`إجابة صحيحة! حصلت على <b>${earned}</b> نقطة لأنك أجبت خلال ${Math.floor(elapsed)} ثانية.`)}
+    else{el.classList.add('wrong');state.score=Number(result.score??state.score);state.stars=Number(result.stars??state.stars);state.coins=Number(result.coins??state.coins);state.energy=Math.max(0,state.energy-1);state.streak=0;showFeedback(false,'ليست الإجابة الصحيحة. حصلت على 0 نقطة. راجع القاعدة وحاول في السؤال التالي.')}
+    await saveOnlineProgress();renderStages();renderLeaderboard();updateUI();
+  };
+
+  window.timeoutQuestionV6 = async function(){
+    if(state.answered||questionTimedOutV5)return;
+    questionTimedOutV5=true;state.answered=true;stopQuestionTimerV5();$('nextBtn').disabled=true;
+    const limit=getCurrentQuestionTimeV5();
+    const result=await recordAnswerOnlineV6(state.currentQuestionId,null,limit);
+    if(result){state.score=Number(result.score??state.score);state.stars=Number(result.stars??state.stars);state.coins=Number(result.coins??state.coins);}
+    state.streak=0;state.energy=Math.max(0,state.energy-1);document.querySelectorAll('.choice').forEach(b=>{b.classList.add('disabled');if(b.dataset.correct==='true')b.classList.add('correct')});
+    showFeedback(false,'⏰ انتهى الوقت! اعتُبر السؤال خطأ. سيتم الانتقال إلى المرحلة التالية.');
+    await saveOnlineProgress();renderLeaderboard();updateUI();
+    setTimeout(async()=>{
+      await finishStageAttempt();
+      const ni=(state.stageIndex||0)+1;
+      if(ni<DB.stages.length && userCanAccessOnline(ni)){
+        const start=await startStageAttempt(DB.stages[ni].dbId);if(!start)return;
+        state.stageIndex=ni;state.questionIndex=0;state.answered=false;state.currentAttemptId=start.attempt_id||start.id;
+        await saveOnlineProgress();renderStages();loadQ();showToast(`⏰ انتهى الوقت — انتقلت إلى: ${DB.stages[ni].name}`);
+      }else{
+        await finishStageAttempt();state.questionIndex=0;await saveOnlineProgress();showStageCompleteV4();
+      }
+    },700);
+  };
+
+  window.next = async function(){
+    stopQuestionTimerV5(); const st=currentStageOnline();if(!st)return;
+    const limit=Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length);
+    state.questionIndex=(state.questionIndex||0)+1; await saveOnlineProgress();
+    if(state.questionIndex>=limit){await finishStageAttempt();state.questionIndex=0;await saveOnlineProgress();showStageCompleteV4();return;}
+    renderStages();loadQ();
+  };
+
+  window.skip = async function(){
+    stopQuestionTimerV5();state.streak=0;state.questionIndex=(state.questionIndex||0)+1;await saveOnlineProgress();
+    const st=currentStageOnline(),limit=st?Math.min(Math.max(1,Number(st.question_count||st.questions.length)),st.questions.length):1;
+    if(state.questionIndex>=limit){await finishStageAttempt();state.questionIndex=0;await saveOnlineProgress();showStageCompleteV4();}else{loadQ();}showToast('تم تخطي السؤال');
+  };
+
+  // Replace access check to distinguish one-time access: access itself remains valid for resume, but no new attempt after completion.
+  const _oldRenderStages=window.renderStages;
+  window.renderStages = function(){
+    const list=DB.stages||[]; if(!list.length){$('levels').innerHTML='<div class="empty-rank">لا توجد مراحل منشورة حاليًا.</div>';return;}
+    const idx=state.stageIndex||0;
+    $('levels').innerHTML=list.map((st,i)=>{
+      const access=userCanAccessOnline(i), count=Math.max(1,Math.min(st.question_count||st.questions.length||1,st.questions.length||st.question_count||1));
+      const isDoneOneTime = !!DB.oneTimeCompleted?.has(String(st.dbId));
+      const lockedByUsed = st.access==='paid' && !adminLoggedV4 && isDoneOneTime;
+      const can=access && !lockedByUsed;
+      const progress=i<idx?100:i===idx?Math.min(99,Math.round(((state.questionIndex||0)/Math.max(1,count))*100)):0;
+      let badge=st.access==='free'?'<span class="free-badge">مجاني</span>':(lockedByUsed?'<span class="lock-badge">✅ استُخدمت المحاولة</span>':(can?'<span class="free-badge">تم الفتح</span>':`<span class="lock-badge">🔒 ${Number(st.price||0).toLocaleString('ar-EG')} جنيه</span>`));
+      return `<button class="level ${st.color||'l1'} ${can?'':'stage-lock'}" onclick="setStage(${i})"><div>${i+1}. ${escapeHTML(st.name)}</div><div style="opacity:.9;font-size:13px">${count} سؤالًا • ⏱️ ${st.timeLimit}ث</div>${badge}<div class="progress"><i style="width:${progress}%"></i></div></button>`;
+    }).join('');
+  };
+
+  async function refreshOneTimeCompleted(){
+    DB.oneTimeCompleted=new Set(); if(!cloudClient||!currentUser)return;
+    const {data}=await cloudClient.from('stage_access').select('stage_id,attempts_used,max_attempts').eq('player_id',currentUser);
+    (data||[]).forEach(r=>{if(Number(r.attempts_used||0)>=Number(r.max_attempts||1))DB.oneTimeCompleted.add(String(r.stage_id));});
+  }
+
+  // Admin reports
+  window.populateReportSelectors = async function(){
+    if(!adminLoggedV4||!cloudClient)return;
+    const {data,error}=await cloudClient.from('profiles').select('id,display_name,total_score,total_stars,coins,created_at').order('display_name',{ascending:true});
+    if(error){showToast(error.message);return;} reportsUsers=data||[];
+    $('reportUserSelect').innerHTML=reportsUsers.map((u,i)=>`<option value="${u.id}">${escapeHTML(u.display_name||'لاعب')} — ${Number(u.total_score||0)} نقطة</option>`).join('') || '<option value="">لا يوجد لاعبون</option>';
+    $('reportStageSelect').innerHTML='<option value="">كل المراحل</option>'+(DB.stages||[]).map(s=>`<option value="${s.dbId}">${escapeHTML(s.name)}</option>`).join('');
+    await loadStudentReport();
+  };
+  window.loadStudentReport = async function(){
+    const uid=$('reportUserSelect')?.value;if(!uid)return;
+    const sid=$('reportStageSelect')?.value||'';
+    let q=cloudClient.from('stage_attempts').select('id,player_id,stage_id,attempt_no,status,started_at,completed_at,score_earned,stars_earned,stages(title)').eq('player_id',uid).order('started_at',{ascending:false});
+    if(sid)q=q.eq('stage_id',sid);
+    const {data:attempts,error}=await q;if(error){$('studentReportList').innerHTML=`<div class="empty-rank">${escapeHTML(error.message)}</div>`;return;}
+    const totalAttempts=(attempts||[]).length, totalScore=(attempts||[]).reduce((a,x)=>a+Number(x.score_earned||0),0), totalStars=(attempts||[]).reduce((a,x)=>a+Number(x.stars_earned||0),0);
+    $('studentReportSummary').innerHTML=`<div class="report-kpi">المحاولات<br><b>${totalAttempts}</b></div><div class="report-kpi">نقاط هذه المرحلة/المراحل<br><b>${totalScore}</b></div><div class="report-kpi">النجوم<br><b>${totalStars}</b></div><div class="report-kpi">الحالة<br><b>تقارير محفوظة</b></div>`;
+    if(!attempts?.length){$('studentReportList').innerHTML='<div class="empty-rank">لا توجد محاولات مسجلة لهذا الطالب.</div>';return;}
+    const ids=attempts.map(a=>a.id);const {data:ans,error:ae}=await cloudClient.from('player_answers').select('attempt_id,question_id,selected_choice,is_correct,points,elapsed_seconds,created_at,questions(question_text,choice_a,choice_b,choice_c,choice_d,correct_choice),stages(title)').in('attempt_id',ids).order('created_at',{ascending:true});
+    if(ae){$('studentReportList').innerHTML=`<div class="empty-rank">${escapeHTML(ae.message)}</div>`;return;}
+    const by=new Map();(ans||[]).forEach(a=>{if(!by.has(a.attempt_id))by.set(a.attempt_id,[]);by.get(a.attempt_id).push(a)});
+    const letter={a:'أ',b:'ب',c:'ج',d:'د'};
+    $('studentReportList').innerHTML=(attempts||[]).map(a=>{
+      const arr=by.get(a.id)||[], st=a.status==='completed'?'مكتملة':a.status==='abandoned'?'متروكة':'نشطة';
+      const table=arr.length?`<div class="attempt-answers"><table class="report-table"><thead><tr><th>#</th><th>السؤال</th><th>إجابة الطالب</th><th>الصحيحة</th><th>النتيجة</th><th>الزمن</th></tr></thead><tbody>${arr.map((x,j)=>{const q=x.questions||{};const selected=x.selected_choice?`${letter[x.selected_choice]||x.selected_choice}) ${q['choice_'+x.selected_choice]||''}`:'لم يجب';const correct=`${letter[q.correct_choice]||q.correct_choice}) ${q['choice_'+q.correct_choice]||''}`;const cls=x.is_correct?'report-correct':(!x.selected_choice?'report-timeout':'report-wrong');return `<tr><td>${j+1}</td><td>${escapeHTML(q.question_text||'')}</td><td>${escapeHTML(selected)}</td><td>${escapeHTML(correct)}</td><td class="${cls}">${x.is_correct?`✅ ${x.points} نقطة`:(!x.selected_choice?'⏰ انتهى الوقت':'❌ خطأ')}</td><td>${Number(x.elapsed_seconds||0).toFixed(1)}ث</td></tr>`}).join('')}</tbody></table></div>`:'<div class="small">لا توجد إجابات محفوظة.</div>';
+      return `<div class="attempt-card"><div class="attempt-head"><b>📘 ${escapeHTML(a.stages?.title||'مرحلة')} — محاولة ${a.attempt_no}</b><span>${st} | ⭐ ${Number(a.score_earned||0)} نقطة</span></div><div class="small">بدأت: ${new Date(a.started_at).toLocaleString('ar-EG')} ${a.completed_at?` — انتهت: ${new Date(a.completed_at).toLocaleString('ar-EG')}`:''}</div>${table}</div>`;
+    }).join('');
+  };
+
+  const _oldShowAdminTabV6=window.showAdminTab;
+  window.showAdminTab = async function(tab){
+    const tabs=['stages','questions','users','reports','payments'];
+    tabs.forEach(k=>{const id='admin'+k.charAt(0).toUpperCase()+k.slice(1)+'Tab';if($(id))$(id).classList.toggle('hidden',k!==tab);const el=$('adminTab'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.classList.toggle('active',k===tab)});
+    activeAdminTab=tab;
+    if(tab==='stages')await renderAdminStages();
+    if(tab==='questions'){await renderAdminStageSelectors();await renderAdminQuestions();}
+    if(tab==='users')await renderAdminUsers();
+    if(tab==='reports')await populateReportSelectors();
+    if(tab==='payments')await renderAdminPayments();
+  };
+  const _oldShowOnlineAdminPanel=window.showOnlineAdminPanel;
+  // Ensure the reports selector gets populated after admin opens.
+  if(window.showOnlineAdminPanel){
+    const orig=window.showOnlineAdminPanel;
+    window.showOnlineAdminPanel=async function(){await orig(); if(activeAdminTab==='reports')await populateReportSelectors();};
+  }
 })();
 </script>
 </body></html>
