@@ -1,4 +1,4 @@
-﻿package com.hussein.ismalfail;
+package com.hussein.ismalfail;
 
 import android.content.Context;
 import android.content.DialogInterface;

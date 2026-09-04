@@ -1,4 +1,4 @@
-﻿package com.hussein.ismafail;
+package com.hussein.ismafail;
 
 /**
  * @deprecated Legacy package stub preserved for compatibility.
