@@ -134,8 +134,9 @@ body{background:#1696e4;}
     <p>سجّل دخولك لحفظ تقدمك والمنافسة على لوحة الأبطال.</p>
     <div class="auth-tabs"><button id="loginTab" class="active" onclick="switchAuth('login')">تسجيل الدخول</button><button id="registerTab" onclick="switchAuth('register')">إنشاء حساب</button></div>
     <form class="auth-form" id="authForm" onsubmit="handleAuth(event)">
-      <div><label for="authName">اسم اللاعب</label><input id="authName" maxlength="20" required autocomplete="username" placeholder="مثال: أحمد"></div>
-      <div><label for="authPass">كلمة السر</label><input id="authPass" type="password" minlength="4" required autocomplete="current-password" placeholder="4 أحرف على الأقل"></div>
+      <div><label id="authNameLabel" for="authName">البريد الإلكتروني</label><input id="authName" type="email" maxlength="120" required autocomplete="username" placeholder="مثال: ahmed@gmail.com"></div>
+      <div id="registerNameWrap" class="hidden"><label for="authDisplayName">اسم اللاعب</label><input id="authDisplayName" maxlength="20" autocomplete="nickname" placeholder="مثال: أحمد"></div>
+      <div><label for="authPass">كلمة السر</label><input id="authPass" type="password" minlength="6" required autocomplete="current-password" placeholder="6 أحرف على الأقل"></div>
       <div class="auth-msg" id="authMsg"></div><button class="auth-submit" id="authSubmit">دخول إلى اللعبة 🚀</button>
     </form>
     <div class="small" style="margin-top:14px">الحسابات والنتائج والبيانات الأساسية محفوظة أونلاين عبر Supabase.</div>
@@ -1012,27 +1013,49 @@ setTimeout(()=>{ renderCloudLeaderboard(); if(cloudClient){cloudClient.auth.getS
 
   window.closeAdmin = function(){$('adminOverlay').style.display='none';};
 
-  // Online student auth: internal synthetic email, while UI remains name + password.
-  async function playerEmail(name){
-    const normalized=name.trim().toLowerCase(); const h=await hashPass('ismAlfail-player:'+normalized); return `p_${h.slice(0,32)}@players.ismalfail.local`;
-  }
+  // Online student auth: use a real email address with Supabase Auth.
   window.handleAuth = async function(e){
-    e.preventDefault(); const name=$('authName').value.trim().replace(/\s+/g,' '), pass=$('authPass').value, msg=$('authMsg');
+    e.preventDefault();
+    const email=$('authName').value.trim().toLowerCase();
+    const displayName=$('authDisplayName')?.value.trim().replace(/\s+/g,' ') || '';
+    const pass=$('authPass').value;
+    const msg=$('authMsg');
     if(!cloudClient){msg.className='auth-msg err';msg.textContent='تعذر الاتصال بالخادم.';return;}
-    if(name.length<2||pass.length<4){msg.className='auth-msg err';msg.textContent='تأكد من اسم اللاعب وكلمة السر.';return;}
-    const email=await playerEmail(name);msg.className='auth-msg';msg.textContent='جارٍ التحقق...';
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg.className='auth-msg err';msg.textContent='اكتب بريدًا إلكترونيًا صحيحًا، مثل: ahmed@gmail.com';return;}
+    if(pass.length<6){msg.className='auth-msg err';msg.textContent='كلمة السر يجب أن تكون 6 أحرف على الأقل.';return;}
+    if(authMode==='register' && displayName.length<2){msg.className='auth-msg err';msg.textContent='اكتب اسم اللاعب.';return;}
+    msg.className='auth-msg';msg.textContent='جارٍ الاتصال...';
     if(authMode==='register'){
-      const {data,error}=await cloudClient.auth.signUp({email,password:pass,options:{data:{display_name:name}}});
+      const {data,error}=await cloudClient.auth.signUp({email,password:pass,options:{data:{display_name:displayName}}});
       if(error){msg.className='auth-msg err';msg.textContent=error.message;return;}
-      if(!data.session){msg.className='auth-msg err';msg.textContent='تم إنشاء الحساب، لكن يلزم تعطيل تأكيد البريد من إعدادات Auth أو تأكيد الحساب.';return;}
-      await cloudClient.from('profiles').upsert({id:data.user.id,display_name:name},{onConflict:'id'});currentUser=data.user.id;await fetchCloudStages();await cloudLoadStudentState();showToast('تم إنشاء الحساب بنجاح 🎉');
+      if(!data.user){msg.className='auth-msg err';msg.textContent='تعذر إنشاء الحساب.';return;}
+      await cloudClient.from('profiles').upsert({id:data.user.id,display_name:displayName,role:'player'},{onConflict:'id'});
+      if(!data.session){msg.className='auth-msg ok';msg.textContent='تم إنشاء الحساب. افتح بريدك الإلكتروني وأكّد الحساب ثم سجّل الدخول.';return;}
+      currentUser=data.user.id;await fetchCloudStages();await cloudLoadStudentState();showToast('تم إنشاء الحساب بنجاح 🎉');
     }else{
       const {data,error}=await cloudClient.auth.signInWithPassword({email,password:pass});
-      if(error||!data.user){msg.className='auth-msg err';msg.textContent='اسم اللاعب أو كلمة السر غير صحيحة.';return;}
+      if(error||!data.user){msg.className='auth-msg err';msg.textContent='البريد الإلكتروني أو كلمة السر غير صحيحة.';return;}
       const existing=(await cloudClient.from('profiles').select('id,display_name,role').eq('id',data.user.id).maybeSingle()).data;
-      if(!existing){await cloudClient.from('profiles').insert({id:data.user.id,display_name:name,role:'player'});}
+      if(!existing){
+        const fallbackName=(data.user.user_metadata?.display_name || email.split('@')[0]).slice(0,20);
+        const {error:insertError}=await cloudClient.from('profiles').insert({id:data.user.id,display_name:fallbackName,role:'player'});
+        if(insertError){msg.className='auth-msg err';msg.textContent=insertError.message;return;}
+      }
       currentUser=data.user.id;await fetchCloudStages();await cloudLoadStudentState();showToast('مرحبًا بعودتك 👋');
     }
+  };
+
+  window.switchAuth = function(mode){
+    authMode=mode;
+    $('loginTab').classList.toggle('active',mode==='login');
+    $('registerTab').classList.toggle('active',mode==='register');
+    $('registerNameWrap').classList.toggle('hidden',mode!=='register');
+    $('authNameLabel').textContent=mode==='register'?'البريد الإلكتروني':'البريد الإلكتروني';
+    $('authName').placeholder='مثال: ahmed@gmail.com';
+    $('authName').type='email';
+    $('authPass').autocomplete=mode==='register'?'new-password':'current-password';
+    $('authSubmit').textContent=mode==='register'?'إنشاء الحساب والبدء 🎮':'دخول إلى اللعبة 🚀';
+    $('authMsg').textContent='';
   };
 
   window.logout = async function(){
