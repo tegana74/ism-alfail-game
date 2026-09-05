@@ -12,6 +12,13 @@
 :root{--navy:#14255b;--purple:#6b36b5;--gold:#ffc83d;--green:#57c62b;--red:#ef5b5b;--cream:#fff5dc;--ink:#24304f;--blue:#42a7e8}
 *{box-sizing:border-box} body{margin:0;font-family:"Tahoma","Arial",sans-serif;background:linear-gradient(135deg,#5fb8f2 0%,#b9edff 48%,#f6d48c 100%);color:var(--ink);min-height:100vh}
 .app{max-width:1280px;margin:auto;padding:18px}.top{display:grid;grid-template-columns:1.15fr 2fr 1.15fr;gap:14px;align-items:center}.brand,.hud,.player{background:rgba(255,255,255,.9);border:3px solid rgba(20,37,91,.22);box-shadow:0 12px 32px rgba(25,38,86,.18);border-radius:22px;padding:14px}.brand h1{margin:0;color:#ff9f1a;text-shadow:0 3px 0 #8e4f1c;font-size:clamp(24px,3vw,40px)}.brand p{margin:3px 0 0;font-weight:700}.hud{display:flex;justify-content:center;gap:26px}.stat{text-align:center;font-weight:900}.stat b{display:block;font-size:25px;color:var(--purple)}.player{display:flex;align-items:center;gap:12px;justify-content:center}.avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(#ffd96e,#ff9a26);font-size:30px;border:3px solid #fff;box-shadow:0 4px 10px #aaa}.layout{display:grid;grid-template-columns:1.05fr 1.8fr 1fr;gap:16px;margin-top:16px}.panel{background:rgba(255,255,255,.93);border:3px solid rgba(20,37,91,.22);border-radius:24px;box-shadow:0 12px 32px rgba(25,38,86,.18);padding:18px}.panel h2,.panel h3{margin-top:0}.levels{display:grid;gap:10px}.level{border-radius:18px;padding:14px;color:#fff;cursor:pointer;position:relative;overflow:hidden;border:0;text-align:right;font-size:16px;font-weight:900;transition:.2s}.level:hover{transform:translateY(-2px)}.l1{background:#3b8bdf}.l2{background:#6842c4}.l3{background:#9e58c9}.l4{background:#e28a22}.l5{background:#2d8751}.l6{background:#c76a31}.progress{height:9px;background:#ffffff55;border-radius:10px;margin-top:8px;overflow:hidden}.progress i{display:block;height:100%;background:#fff;width:0}.feature{padding:12px;border-radius:16px;background:#edf8ff;margin:8px 0;font-weight:700}.feature span{font-size:21px;margin-left:7px}.quiz{min-height:540px;display:flex;flex-direction:column}.quiz-head{display:flex;justify-content:space-between;gap:8px;align-items:center}.pill{background:#efe7ff;color:#5c2ba3;padding:8px 13px;border-radius:999px;font-weight:900}.question-card{background:linear-gradient(180deg,#fffaf0,#fff);border-radius:20px;border:2px solid #e4d0a4;padding:22px;margin-top:14px;flex:1}.question{font-size:25px;line-height:1.7;font-weight:900;text-align:center}.choices{display:grid;gap:12px;margin-top:20px}.choice{border:3px solid #d8dfef;background:#fff;padding:14px;border-radius:15px;font-size:20px;font-weight:800;cursor:pointer;text-align:right;transition:.2s}.choice:hover{border-color:#8b63d9;background:#fbf8ff}.choice.correct{border-color:var(--green);background:#eafbdd}.choice.wrong{border-color:var(--red);background:#ffeaea}.choice.disabled{cursor:default}.feedback{margin-top:16px;padding:12px 15px;border-radius:14px;font-weight:800;display:none}.feedback.show{display:block}.feedback.good{background:#e7f8dc;color:#276417}.feedback.bad{background:#ffe4e4;color:#962f2f}.actions{display:flex;gap:9px;justify-content:center;margin-top:14px;flex-wrap:wrap}.btn{border:0;border-radius:15px;padding:12px 18px;font-weight:900;cursor:pointer;font-size:16px}.primary{background:var(--green);color:#12310b}.secondary{background:#ece6ff;color:#52249a}.danger{background:#ffe6e6;color:#9c2929}.sidebox{margin-bottom:14px}.rank{display:grid;gap:8px}.row{display:flex;justify-content:space-between;padding:9px;border-radius:12px;background:#f5f6fa}.today{background:#e5f8d6!important;border:2px solid #86cd50}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#16265b;color:#fff;padding:13px 20px;border-radius:14px;font-weight:800;display:none;z-index:10;box-shadow:0 10px 30px #0004}.toast.show{display:block}.modal{position:fixed;inset:0;background:#15245bcc;display:none;align-items:center;justify-content:center;padding:20px;z-index:20}.modal-card{background:#fff;border-radius:24px;max-width:650px;width:100%;padding:24px;text-align:center}.big{font-size:62px}.stars{color:#f3b21b;font-size:30px}.small{font-size:13px;color:#667085}.footer-note{text-align:center;padding:12px;font-weight:800;color:#254}.bar{height:12px;background:#e6e9f2;border-radius:9px;overflow:hidden}.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#55c43c,#8ad446)}
+
+/* ===== Gemini Question Generator (admin-only, additive) ===== */
+.gemini-stage-btn{border:0;border-radius:12px;padding:9px 12px;background:linear-gradient(180deg,#4b7bec,#2d4da8);color:#fff;font-weight:900;cursor:pointer;box-shadow:0 3px 0 #1f2f6f}.gemini-stage-btn:hover{filter:brightness(1.05)}
+.gemini-overlay{position:fixed;inset:0;z-index:260;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,22,48,.78);backdrop-filter:blur(5px)}
+.gemini-card{width:min(900px,96vw);max-height:92vh;overflow:auto;background:linear-gradient(180deg,#fffdf7,#f6e6be);border:4px solid #d3a03b;border-radius:22px;box-shadow:0 16px 0 #6d3c19,0 30px 80px #0008;padding:18px;direction:rtl}.gemini-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:2px solid #dfbd79;padding-bottom:10px}.gemini-head h3{margin:0;color:#4b2a88}.gemini-close{border:0;background:#ffe4e4;color:#962f2f;border-radius:12px;padding:8px 12px;font-weight:900;cursor:pointer}.gemini-fields{display:grid;grid-template-columns:1.7fr .7fr .8fr;gap:10px;margin-top:12px}.gemini-fields .field{display:grid;gap:5px}.gemini-fields input,.gemini-fields select{width:100%;box-sizing:border-box}.gemini-key-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}.gemini-key-row input{width:100%;box-sizing:border-box}.gemini-note{font-size:12px;line-height:1.7;color:#6a5130;margin-top:8px;background:#fff6dc;border:1px solid #dec58f;border-radius:10px;padding:8px}.gemini-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.gemini-actions button{border:0;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}.gemini-primary{background:#4aaf21;color:#fff;box-shadow:0 3px 0 #27720d}.gemini-secondary{background:#ece6ff;color:#5725a4}.gemini-preview{margin-top:14px;display:grid;gap:9px}.gemini-q{background:#fff;border:1px solid #d9c08b;border-radius:14px;padding:10px}.gemini-q b{display:block;margin-bottom:6px}.gemini-q ol{margin:5px 0 0;padding-right:22px}.gemini-status{margin-top:10px;min-height:24px;font-weight:800}.gemini-status.ok{color:#23700f}.gemini-status.err{color:#a22a2a}.gemini-status.wait{color:#6b45a5}
+@media(max-width:700px){.gemini-fields{grid-template-columns:1fr}.gemini-key-row{grid-template-columns:1fr}.gemini-card{padding:12px;border-radius:16px}}
+
 @media(max-width:980px){.top,.layout{grid-template-columns:1fr}.player{order:-1}.quiz{min-height:0}.question{font-size:21px}}
 
 .auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#14255bf2,#6b36b5ee);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
@@ -103,7 +110,7 @@ body{background:#1696e4;}
 .payment-box{margin-top:14px;background:linear-gradient(180deg,#fffdf6,#f9e8bd);border:3px solid #a86626;border-radius:18px;padding:14px;box-shadow:0 6px 0 #7a461c}
 .payment-box h3{margin:0 0 8px;color:#552b9f}.payment-number{font-size:24px;font-weight:1000;letter-spacing:1px;text-align:center;color:#1d3b74;direction:ltr;background:#fff;padding:10px;border-radius:12px;border:2px dashed #c38d35}
 .payment-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.payment-btn{flex:1;min-width:130px;border:0;border-radius:12px;padding:11px 12px;font-weight:900;cursor:pointer}.insta{background:#6b36b5;color:#fff}.wallet{background:#1f8f4c;color:#fff}.copy{background:#ece6ff;color:#512398}.install-app{background:linear-gradient(180deg,#f2a82b,#db7c13);color:#fff;border:0;border-radius:14px;padding:12px 16px;font-weight:1000;cursor:pointer;box-shadow:0 5px 0 #8d4b0e}.install-app[disabled]{opacity:.55;cursor:default}.payment-note{font-size:12px;color:#6b5840;line-height:1.7;margin-top:8px}.payment-qr{display:grid;place-items:center;margin-top:10px}.payment-qr canvas{background:#fff;padding:8px;border-radius:12px;border:2px solid #dbc18c}.pay-modal{max-width:620px;text-align:right}.pay-modal h2{text-align:center;color:#552b9f}.pay-grid{display:grid;gap:10px}.pay-grid label{font-weight:900;color:#4a3826}.pay-grid input,.pay-grid select{width:100%;padding:12px;border:2px solid #d9c191;border-radius:11px;font:inherit}.pay-summary{background:#f4eddc;padding:10px;border-radius:12px;font-weight:900}.payment-status{margin-top:10px;padding:10px;border-radius:10px;font-weight:900;display:none}.payment-status.show{display:block}.payment-status.ok{background:#e7f8dc;color:#276417}.payment-status.err{background:#ffe4e4;color:#962f2f}
-.install-banner{display:flex;gap:12px;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#173a7a,#5b2cad);color:#fff;border-radius:16px;padding:12px 14px;margin:14px 0;box-shadow:0 7px 0 #2d1b68}.install-banner strong{display:block}.install-banner span{font-size:12px;opacity:.9}.admin-tab-payments .count{background:#ffcf45;color:#5a3400;border-radius:999px;padding:2px 7px;margin-right:4px}.pay-pending{border-right:5px solid #f0aa20}.pay-approved{border-right:5px solid #4caf50}.pay-rejected{border-right:5px solid #e85050}
+.install-banner{display:flex;gap:12px;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#173a7a,#5b2cad);color:#fff;border-radius:16px;padding:12px 14px;margin:14px 0;box-shadow:0 7px 0 #2d1b68}.install-banner>div:first-child{min-width:0}.install-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.install-banner strong{display:block}.install-banner span{font-size:12px;opacity:.9}.install-apk{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:linear-gradient(180deg,#57c62b,#3fa517);color:#fff;border:0;border-radius:14px;padding:12px 16px;font-weight:1000;cursor:pointer;box-shadow:0 5px 0 #2c7510;white-space:nowrap}.install-apk:hover{filter:brightness(1.05);transform:translateY(-1px)}.admin-tab-payments .count{background:#ffcf45;color:#5a3400;border-radius:999px;padding:2px 7px;margin-right:4px}.pay-pending{border-right:5px solid #f0aa20}.pay-approved{border-right:5px solid #4caf50}.pay-rejected{border-right:5px solid #e85050}
 @media(max-width:650px){.payment-number{font-size:20px}.install-banner{flex-direction:column;align-items:stretch}.install-app{width:100%}}
 
 
@@ -261,7 +268,10 @@ body{background:#1696e4;}
   
 <div class="install-banner">
   <div><strong>📱 ثبّت اللعبة على هاتفك أو التابلت</strong><span>تعمل كأنها تطبيق Android من المتصفح دون الحاجة إلى متجر التطبيقات.</span></div>
-  <button class="install-app" id="installBtn" onclick="installGame()">⬇️ تثبيت اللعبة على Android</button>
+  <div class="install-actions">
+    <a class="install-apk" id="apkInstallBtn" href="./رحلة-اسم-الفاعل-debug.apk">📱 تثبيت تطبيق رحلة اسم الفاعل</a>
+    <button class="install-app" id="installBtn" onclick="installGame()">⬇️ تثبيت اللعبة على Android</button>
+  </div>
 </div>
 
 <section class="payment-box">
@@ -292,6 +302,8 @@ body{background:#1696e4;}
   <div class="footer-note">جاهز للتدريب؟ لديك أكثر من 100 سؤال موزعة على مستويات متنوعة في اشتقاق اسم الفاعل.</div><div class="game-credit"><img src="teacher_portrait.png" alt="الأستاذ حسين سيد"><span>إعداد وتصميم الأستاذ : حسين سيد</span></div>
 </div>
 
+
+<div class="gemini-overlay" id="geminiGeneratorOverlay"><div class="gemini-card"><div class="gemini-head"><div><h3>🤖 مولد الأسئلة بواسطة Gemini</h3><div class="small" id="geminiTargetStage">المرحلة الحالية</div></div><button class="gemini-close" type="button" onclick="closeGeminiGenerator()">إغلاق</button></div><div class="gemini-fields"><div class="field"><label>اسم الدرس / موضوع الأسئلة</label><input id="geminiLesson" placeholder="مثال: اسم الفاعل من الفعل الثلاثي"></div><div class="field"><label>عدد الأسئلة</label><input id="geminiCount" type="number" min="1" max="100" value="10"></div><div class="field"><label>المستوى</label><select id="geminiDifficulty"><option value="easy">سهل</option><option value="medium" selected>متوسط</option><option value="hard">صعب</option><option value="challenge">تحدي</option></select></div></div><div class="gemini-key-row"><input id="geminiApiKey" type="password" autocomplete="off" placeholder="مفتاح Gemini API — لا يتم حفظه"><button type="button" class="gemini-secondary" onclick="toggleGeminiKey()">إظهار/إخفاء</button></div><div class="gemini-note">هذه نسخة اختبار محلية. مفتاح Gemini لا يتم حفظه. للاستخدام النهائي على GitHub Pages يجب وضع المفتاح في وظيفة خادمية آمنة.</div><div class="gemini-actions"><button type="button" class="gemini-primary" onclick="generateGeminiQuestions()">✨ توليد الأسئلة</button><button type="button" class="gemini-secondary" onclick="saveGeminiQuestions()" id="geminiSaveBtn" disabled>💾 حفظ الأسئلة في المرحلة</button><button type="button" class="gemini-secondary" onclick="clearGeminiPreview()">🧹 مسح المعاينة</button></div><div id="geminiStatus" class="gemini-status"></div><div id="geminiPreview" class="gemini-preview"></div></div></div>
 <div class="admin-overlay" id="adminOverlay">
   <div class="admin-card">
     <div id="adminLoginView" class="admin-login">
@@ -316,7 +328,7 @@ body{background:#1696e4;}
       </div>
       <div id="adminStageTab">
         <div class="admin-grid">
-          <section class="admin-section"><h3>➕ إضافة مرحلة</h3><form class="admin-form" onsubmit="addStage(event)"><div><label>اسم المرحلة</label><input id="newStageName" required placeholder="مثال: تحدي الأبطال"></div><div><label>الحالة</label><select id="newStageAccess"><option value="free">مجاني</option><option value="paid">بمقابل مالي</option></select></div><div><label>السعر بالجنيه</label><input id="newStagePrice" type="number" min="0" step="1" value="0"></div><div><label>عدد الأسئلة في المرحلة</label><input id="newStageQuestionCount" type="number" min="1" max="1000" step="1" value="10"></div><div><label>مدة السؤال بالثواني</label><input id="newStageTime" type="number" min="5" max="600" step="1" value="60"><small class="small">يمكن للمدير زيادة أو تقليل الوقت لكل مرحلة.</small></div><div class="admin-actions"><button class="btn primary" type="submit">إضافة المرحلة</button></div></form></section>
+          <section class="admin-section"><h3>➕ إضافة مرحلة</h3><form class="admin-form" onsubmit="addStage(event)"><div><label>اسم المرحلة</label><input id="newStageName" required placeholder="مثال: تحدي الأبطال"></div><div><label>الحالة</label><select id="newStageAccess"><option value="free">مجاني</option><option value="paid">بمقابل مالي</option></select></div><div><label>السعر بالجنيه</label><input id="newStagePrice" type="number" min="0" step="1" value="0"></div><div><label>اسم الدرس / موضوع الأسئلة (اختياري)</label><input id="newStageLesson" placeholder="مثال: اسم الفاعل من الفعل الثلاثي"></div><div><label>مستوى أسئلة المولد</label><select id="newStageDifficulty"><option value="easy">سهل</option><option value="medium" selected>متوسط</option><option value="hard">صعب</option><option value="challenge">تحدي</option></select></div><div><label>عدد الأسئلة في المرحلة</label><input id="newStageQuestionCount" type="number" min="1" max="1000" step="1" value="10"></div><div><label>مدة السؤال بالثواني</label><input id="newStageTime" type="number" min="5" max="600" step="1" value="60"><small class="small">يمكن للمدير زيادة أو تقليل الوقت لكل مرحلة.</small></div><div class="admin-actions"><button class="btn primary" type="submit">إضافة المرحلة</button><label style="display:flex;align-items:center;gap:7px;font-weight:800"><input id="newStageGenerateAI" type="checkbox"> 🤖 فتح مولد Gemini بعد إنشاء المرحلة</label></div></form></section>
           <section class="admin-section"><h3>🗺️ المراحل الحالية</h3><div id="adminStagesList" class="admin-list"></div></section>
         </div>
       </div>
@@ -621,7 +633,7 @@ async function adminLogout(){
 }
 function showAdminPanelV4(){gameConfigV4=readConfigV4();$('adminLoginView').classList.add('hidden');$('adminPanelView').classList.remove('hidden');showAdminTab(activeAdminTab);renderAdminStages();renderAdminStageSelectors();renderAdminUsers();renderAdminPayments()}
 function showAdminTab(tab){activeAdminTab=tab;[['stages','adminStageTab'],['questions','adminQuestionsTab'],['users','adminUsersTab'],['payments','adminPaymentsTab']].forEach(([k,id])=>$(id).classList.toggle('hidden',k!==tab));['stages','questions','users','payments'].forEach(k=>{const el=$('adminTab'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.classList.toggle('active',k===tab)});if(tab==='stages')renderAdminStages();if(tab==='questions'){renderAdminStageSelectors();renderAdminQuestions()}if(tab==='users')renderAdminUsers();if(tab==='payments')renderAdminPayments()}
-function renderAdminStages(){$('adminStagesList').innerHTML=gameConfigV4.stages.map((st,i)=>`<div class="admin-item"><div class="admin-item-head"><b>${i+1}. ${escapeHTML(st.name)}</b><span>${st.access==='free'?'<span class="free-badge">مجاني</span>':`<span class="price-badge">${Number(st.price||0)} جنيه</span>`}</span></div><small>عدد الأسئلة: ${st.questions.length} — ⏱️ زمن السؤال: ${Number(st.timeLimit||60)} ثانية</small><div class="admin-actions" style="margin-top:8px"><button class="admin-secondary" onclick="editStage(${i})">✏️ تعديل</button><button class="admin-danger" onclick="deleteStage(${i})">🗑️ حذف</button></div></div>`).join('')}
+function renderAdminStages(){$('adminStagesList').innerHTML=gameConfigV4.stages.map((st,i)=>`<div class="admin-item"><div class="admin-item-head"><b>${i+1}. ${escapeHTML(st.name)}</b><span>${st.access==='free'?'<span class="free-badge">مجاني</span>':`<span class="price-badge">${Number(st.price||0)} جنيه</span>`}</span></div><small>عدد الأسئلة: ${st.questions.length} — ⏱️ زمن السؤال: ${Number(st.timeLimit||60)} ثانية</small><div class="admin-actions" style="margin-top:8px"><button class="admin-secondary" onclick="editStage(${i})">✏️ تعديل</button><button class="gemini-stage-btn" onclick="openGeminiGenerator(${i})">🤖 مولد الأسئلة</button><button class="admin-danger" onclick="deleteStage(${i})">🗑️ حذف</button></div></div>`).join('')}
 function addStage(e){e.preventDefault();const name=$('newStageName').value.trim();const access=$('newStageAccess').value;const price=Math.max(0,Number($('newStagePrice').value||0));const timeLimit=Math.max(5,Math.min(600,Math.round(Number($('newStageTime').value||60))));if(!name)return;gameConfigV4.stages.push({id:'stage_'+Date.now(),name,access:access==='free'?'free':'paid',price:access==='paid'?price:0,timeLimit,questions:[],color:['l1','l2','l3','l4','l5','l6'][gameConfigV4.stages.length%6]});saveConfigV4();e.target.reset();$('newStagePrice').value=0;$('newStageTime').value=60;renderAdminStages();renderAdminStageSelectors();renderStages();showToast('تمت إضافة المرحلة ✅')}
 function editStage(i){const st=gameConfigV4.stages[i];const name=prompt('اسم المرحلة:',st.name);if(name===null)return;const priceInput=prompt('السعر بالجنيه (0 = مجاني):',String(st.price||0));if(priceInput===null)return;const timeInput=prompt('مدة السؤال بالثواني (5 - 600):',String(st.timeLimit||60));if(timeInput===null)return;st.name=name.trim()||st.name;st.price=Math.max(0,Number(priceInput)||0);st.timeLimit=Math.max(5,Math.min(600,Math.round(Number(timeInput)||60)));st.access=st.price>0?'paid':'free';saveConfigV4();renderAdminStages();renderAdminStageSelectors();renderStages();if(i===(state.stageIndex||0))loadQ();showToast('تم تعديل المرحلة ✅')}
 function deleteStage(i){if(gameConfigV4.stages.length<=1){showToast('يجب أن تبقى مرحلة واحدة على الأقل.');return}if(!confirm(`حذف المرحلة «${gameConfigV4.stages[i].name}» بكل أسئلتها؟`))return;const id=gameConfigV4.stages[i].id;gameConfigV4.stages.splice(i,1);const users=readUsers();Object.values(users).forEach(u=>{if(Array.isArray(u.unlockedStages))u.unlockedStages=u.unlockedStages.filter(x=>x!==id)});saveUsers(users);saveConfigV4();if((state.stageIndex||0)>=gameConfigV4.stages.length)state.stageIndex=0;renderAdminStages();renderAdminStageSelectors();renderStages();loadQ();showToast('تم حذف المرحلة 🗑️')}
@@ -1333,20 +1345,22 @@ if(!window.supabase){
     const price = access ? 0 : Math.max(0, Number($('newStagePrice').value || 0));
     const question_count = Math.max(1, Math.min(1000, Math.round(Number($('newStageQuestionCount')?.value || 10))));
     const time_limit_seconds = Math.max(5, Math.min(600, Math.round(Number($('newStageTime').value || 60))));
-    const { error } = await cloudClient.from('stages').insert({
-      title, description: '', sort_order: (DB.stages.length ? Math.max(...DB.stages.map(s => s.dbId)) + 1 : 1),
-      question_count, time_limit_seconds, is_free: access, price_egp: price, is_active: true
+    const lesson = $('newStageLesson')?.value.trim() || '';
+    const difficulty = $('newStageDifficulty')?.value || 'medium';
+    const generateAfterCreate = !!$('newStageGenerateAI')?.checked;
+    const { data: createdStage, error } = await cloudClient.from('stages').insert({
+      title, description:'', sort_order:(DB.stages.length ? Math.max(...DB.stages.map(s=>s.dbId))+1 : 1),
+      question_count, time_limit_seconds, is_free:access, price_egp:price, is_active:true
     }).select('*').single();
     if(error){ showToast(error.message); return; }
     await fetchCloudStages();
-    e.target.reset();
-    $('newStagePrice').value = 0;
-    $('newStageQuestionCount').value = 10;
-    $('newStageTime').value = 60;
-    await renderAdminStages();
-    await renderAdminStageSelectors();
-    renderStages();
-    showToast('تمت إضافة المرحلة ✅');
+    const createdIndex = createdStage?.id != null ? DB.stages.findIndex(st=>String(st.dbId)===String(createdStage.id)) : -1;
+    e.target.reset(); $('newStagePrice').value=0; $('newStageQuestionCount').value=10; $('newStageTime').value=60;
+    await renderAdminStages(); await renderAdminStageSelectors(); renderStages(); showToast('تمت إضافة المرحلة ✅');
+    if(generateAfterCreate && createdIndex>=0){
+      openGeminiGenerator(createdIndex); $('geminiLesson').value=lesson; $('geminiCount').value=Math.max(1,Math.min(100,question_count)); $('geminiDifficulty').value=difficulty;
+      geminiSetStatus('المرحلة أُنشئت بنجاح. أدخل مفتاح Gemini ثم اضغط «✨ توليد الأسئلة».','wait');
+    }
   };
 
   window.editStage = async function(i){
@@ -1678,9 +1692,14 @@ if(!window.supabase){
 
   // 20. showAdminTab
   window.showAdminTab = async function(tab){
-    const tabs = ['stages', 'questions', 'users', 'reports', 'payments'];
-    tabs.forEach(k => {
-      const id = 'admin' + k.charAt(0).toUpperCase() + k.slice(1) + 'Tab';
+    const tabs = [
+      ['stages', 'adminStageTab'],
+      ['questions', 'adminQuestionsTab'],
+      ['users', 'adminUsersTab'],
+      ['reports', 'adminReportsTab'],
+      ['payments', 'adminPaymentsTab']
+    ];
+    tabs.forEach(([k, id]) => {
       if($(id)) $(id).classList.toggle('hidden', k !== tab);
       const el = $('adminTab' + k.charAt(0).toUpperCase() + k.slice(1));
       if(el) el.classList.toggle('active', k === tab);
@@ -1696,6 +1715,161 @@ if(!window.supabase){
   window.closeAdmin = function(){
     if($('adminOverlay')) $('adminOverlay').style.display = 'none';
   };
+
+  // 20.5 Gemini question generator - admin-only, additive; does not modify gameplay loading
+  let geminiTargetStageIndex = null;
+  let geminiGeneratedQuestions = [];
+  function geminiSetStatus(text, cls=''){ const el=$('geminiStatus'); if(el){ el.className='gemini-status '+cls; el.textContent=text||''; } }
+  window.openGeminiGenerator = function(i){
+    if(!adminLoggedV4) return;
+    const st=DB.stages?.[Number(i)]; if(!st){ showToast('لم يتم العثور على المرحلة.'); return; }
+    geminiTargetStageIndex=Number(i); geminiGeneratedQuestions=[];
+    $('geminiGeneratorOverlay').style.display='flex';
+    $('geminiTargetStage').textContent='المرحلة: '+(st.name||'')+' — الأسئلة الحالية: '+(st.questions?.length||0);
+    $('geminiLesson').value=''; $('geminiCount').value=Math.max(1,Math.min(100,Number(st.question_count||10))); $('geminiDifficulty').value='medium';
+    $('geminiPreview').innerHTML=''; $('geminiSaveBtn').disabled=true; geminiSetStatus('','');
+  }
+  window.closeGeminiGenerator = function(){ if(geminiAbortController){try{geminiAbortController.abort();}catch(_){}} geminiBusy=false; const b=document.querySelector('.gemini-primary'); if(b){b.disabled=false;b.textContent='✨ توليد الأسئلة';} $('geminiGeneratorOverlay').style.display='none'; geminiGeneratedQuestions=[]; geminiTargetStageIndex=null; }
+  window.clearGeminiPreview = function(){ geminiGeneratedQuestions=[]; $('geminiPreview').innerHTML=''; $('geminiSaveBtn').disabled=true; geminiSetStatus('',''); }
+  window.toggleGeminiKey = function(){ const el=$('geminiApiKey'); if(el) el.type=el.type==='password'?'text':'password'; }
+  function escapeGeminiText(v){ return String(v??'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function difficultyArabic(v){ return ({easy:'سهل',medium:'متوسط',hard:'صعب',challenge:'تحدي'})[v]||'متوسط'; }
+  function buildGeminiPrompt(lesson,count,difficulty){ return `أنت مولد أسئلة متخصص في تعليم اللغة العربية للطلاب المصريين. أنشئ ${count} سؤال اختيار من متعدد حول درس: "${lesson}". المستوى: ${difficultyArabic(difficulty)}.\\n\\nالشروط: أربعة اختيارات مختلفة لكل سؤال، إجابة صحيحة واحدة فقط، لغة عربية سليمة، لا تكرار، لا ترقيم داخل نص السؤال. أعد JSON فقط بالشكل {"questions":[{"question_text":"...","choices":["...","...","...","..."],"correct_choice":0}]} وcorrect_choice رقم من 0 إلى 3.`; }
+  function extractGeminiJson(text){
+    if(!text) throw new Error('لم تصل استجابة من Gemini.');
+    let t=String(text).trim().replace(/^```json\\s*/i,'').replace(/^```\\s*/i,'').replace(/\\s*```$/,'').trim();
+    const a=t.indexOf('{'),b=t.lastIndexOf('}'); if(a>=0&&b>a)t=t.slice(a,b+1);
+    const obj=JSON.parse(t),arr=Array.isArray(obj)?obj:obj.questions; if(!Array.isArray(arr)) throw new Error('استجابة Gemini لا تحتوي على questions.');
+    return arr.map(q=>({question_text:String(q.question_text||q.question||'').trim(),choices:Array.isArray(q.choices)?q.choices.map(x=>String(x||'').trim()).slice(0,4):[q.choice_a,q.choice_b,q.choice_c,q.choice_d].map(x=>String(x||'').trim()),correct_choice:Number(q.correct_choice??q.answer_index??0)})).filter(q=>q.question_text&&q.choices.length===4&&q.choices.every(Boolean)&&q.correct_choice>=0&&q.correct_choice<=3);
+  }
+  function renderGeminiPreview(){ const box=$('geminiPreview'); box.innerHTML=geminiGeneratedQuestions.map((q,i)=>`<div class="gemini-q"><b>${i+1}. ${escapeGeminiText(q.question_text)}</b><ol type="A">${q.choices.map(c=>`<li>${escapeGeminiText(c)}</li>`).join('')}</ol><div class="small">الإجابة الصحيحة: ${['أ','ب','ج','د'][q.correct_choice]}</div></div>`).join('')||''; $('geminiSaveBtn').disabled=!geminiGeneratedQuestions.length; }
+  let geminiAbortController=null;
+  let geminiBusy=false;
+  const GEMINI_MODELS=['gemini-3.8-flash','gemini-3.7-flash'];
+  const GEMINI_RETRYABLE_STATUS=new Set([429,500,502,503,504]);
+  const waitGeminiRetry=(ms,signal)=>new Promise((resolve,reject)=>{
+    if(signal?.aborted){reject(new DOMException('تم الإلغاء','AbortError'));return;}
+    const t=setTimeout(resolve,ms);
+    signal?.addEventListener('abort',()=>{clearTimeout(t);reject(new DOMException('تم الإلغاء','AbortError'));},{once:true});
+  });
+  async function requestGeminiWithRetry(apiKey,payload,signal){
+    let lastError=null;
+    for(let modelIndex=0;modelIndex<GEMINI_MODELS.length;modelIndex++){
+      const model=GEMINI_MODELS[modelIndex];
+      for(let attempt=0;attempt<3;attempt++){
+        if(signal.aborted) throw new DOMException('تم الإلغاء','AbortError');
+        const timeoutController=new AbortController();
+        const onAbort=()=>timeoutController.abort();
+        signal.addEventListener('abort',onAbort,{once:true});
+        const timeoutId=setTimeout(()=>timeoutController.abort(),45000);
+        try{
+          geminiSetStatus(`الاتصال بـ Gemini (${model}) — المحاولة ${attempt+1} من 3...`,'wait');
+          const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+            body:JSON.stringify(payload),
+            signal:timeoutController.signal
+          });
+          const raw=await res.text();
+          let data={}; try{data=raw?JSON.parse(raw):{};}catch(_){ }
+          if(res.ok) return {data,model};
+          const message=data?.error?.message||`فشل طلب Gemini (${res.status}).`;
+          lastError=new Error(message); lastError.status=res.status;
+          if(!GEMINI_RETRYABLE_STATUS.has(res.status)) throw lastError;
+          if(attempt<2){
+            const delay=1500*Math.pow(2,attempt)+Math.floor(Math.random()*500);
+            geminiSetStatus(`Gemini مشغول حاليًا. إعادة المحاولة بعد ${Math.ceil(delay/1000)} ثانية...`,'wait');
+            await waitGeminiRetry(delay,signal);
+          }
+        }catch(e){
+          if(e?.name==='AbortError'){
+            if(signal.aborted) throw e;
+            lastError=new Error('انتهت مهلة الاتصال بـ Gemini (45 ثانية).');
+          }else{lastError=e;}
+          if((lastError?.status && GEMINI_RETRYABLE_STATUS.has(lastError.status)) || e?.name==='AbortError'){
+            if(attempt<2){
+              const delay=1500*Math.pow(2,attempt)+Math.floor(Math.random()*500);
+              geminiSetStatus(`تعذر إتمام الطلب. إعادة المحاولة بعد ${Math.ceil(delay/1000)} ثانية...`,'wait');
+              await waitGeminiRetry(delay,signal);
+            }
+          }else throw lastError;
+        }finally{
+          clearTimeout(timeoutId); signal.removeEventListener('abort',onAbort);
+        }
+      }
+      if(modelIndex<GEMINI_MODELS.length-1){
+        geminiSetStatus(`تعذر الوصول إلى ${model}. الانتقال تلقائيًا إلى نموذج Gemini احتياطي...`,'wait');
+        await waitGeminiRetry(800,signal);
+      }
+    }
+    throw lastError||new Error('تعذر الاتصال بخدمة Gemini.');
+  }
+  window.generateGeminiQuestions = async function(){
+    if(geminiBusy){ return; }
+    if(!adminLoggedV4){geminiSetStatus('يجب الدخول كمدير.','err');return;}
+    const apiKey=$('geminiApiKey').value.trim(), lesson=$('geminiLesson').value.trim();
+    const count=Math.max(1,Math.min(100,Math.round(Number($('geminiCount').value||10))));
+    const difficulty=$('geminiDifficulty').value;
+    if(!apiKey){geminiSetStatus('أدخل مفتاح Gemini API للاختبار.','err');return;}
+    if(!lesson){geminiSetStatus('أدخل اسم الدرس أو الموضوع.','err');return;}
+
+    geminiBusy=true;
+    const genBtn=document.querySelector('.gemini-primary');
+    if(genBtn){genBtn.disabled=true;genBtn.textContent='⏳ جارٍ التوليد...';}
+    $('geminiSaveBtn').disabled=true;
+    geminiGeneratedQuestions=[]; renderGeminiPreview();
+    geminiAbortController=new AbortController();
+    const signal=geminiAbortController.signal;
+
+    try{
+      const batchSize=5;
+      const totalBatches=Math.ceil(count/batchSize);
+      for(let batch=0; batch<totalBatches; batch++){
+        if(signal.aborted) throw new DOMException('تم الإلغاء','AbortError');
+        const need=Math.min(batchSize,count-geminiGeneratedQuestions.length);
+        geminiSetStatus(`جارٍ تحضير المجموعة ${batch+1} من ${totalBatches} — ${geminiGeneratedQuestions.length} / ${count} سؤال...`,'wait');
+        const payload={
+          contents:[{role:'user',parts:[{text:buildGeminiPrompt(lesson,need,difficulty)+`\nهذه دفعة ${batch+1} من ${totalBatches}. أعد ${need} سؤالًا فقط.`}]}],
+          generationConfig:{responseMimeType:'application/json'}
+        };
+        const result=await requestGeminiWithRetry(apiKey,payload,signal);
+        const data=result.data;
+        const text=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
+        const batchQuestions=extractGeminiJson(text);
+        if(!batchQuestions.length) throw new Error(`أعاد Gemini (${result.model}) دفعة بلا أسئلة صالحة.`);
+        geminiGeneratedQuestions.push(...batchQuestions.slice(0,need));
+        renderGeminiPreview();
+      }
+      geminiGeneratedQuestions=geminiGeneratedQuestions.slice(0,count);
+      renderGeminiPreview();
+      geminiSetStatus(`تم توليد ${geminiGeneratedQuestions.length} سؤالًا بنجاح. راجع المعاينة ثم اضغط «حفظ».`,'ok');
+    }catch(e){
+      console.error('Gemini generator error',e);
+      let msg;
+      if(e?.name==='AbortError') msg='تم إلغاء التوليد.';
+      else if(e?.status===503) msg='خدمة Gemini مشغولة حاليًا بعد عدة محاولات. حاول مرة أخرى بعد قليل.';
+      else msg=e?.message||String(e);
+      geminiSetStatus('فشل توليد الأسئلة: '+msg,'err');
+    }finally{
+      geminiBusy=false;
+      geminiAbortController=null;
+      if(genBtn){genBtn.disabled=false;genBtn.textContent='✨ توليد الأسئلة';}
+    }
+  }
+  window.saveGeminiQuestions = async function(){
+    if(!adminLoggedV4||!cloudClient||geminiTargetStageIndex===null||!geminiGeneratedQuestions.length)return;
+    const st=DB.stages?.[geminiTargetStageIndex]; if(!st){geminiSetStatus('المرحلة غير موجودة.','err');return;}
+    if(!confirm(`سيتم إضافة ${geminiGeneratedQuestions.length} سؤال إلى المرحلة «${st.name}». هل تريد المتابعة؟`))return;
+    geminiSetStatus('جارٍ حفظ الأسئلة في Supabase...','wait'); $('geminiSaveBtn').disabled=true;
+    try{
+      const startOrder=Number(st.questions?.length||0)+1;
+      const rows=geminiGeneratedQuestions.map((q,idx)=>({stage_id:st.dbId,question_text:q.question_text,choice_a:q.choices[0],choice_b:q.choices[1],choice_c:q.choices[2],choice_d:q.choices[3],correct_choice:['a','b','c','d'][q.correct_choice],sort_order:startOrder+idx,is_active:true}));
+      const {error}=await cloudClient.from('questions').insert(rows); if(error)throw error;
+      await fetchCloudStages(); await renderAdminStages(); await renderAdminStageSelectors(); renderStages();
+      const saved=geminiGeneratedQuestions.length; geminiGeneratedQuestions=[]; renderGeminiPreview(); geminiSetStatus(`تم حفظ ${saved} سؤالًا في المرحلة ✅`,'ok');
+      const updated=DB.stages?.[geminiTargetStageIndex]; $('geminiTargetStage').textContent='المرحلة: '+(updated?.name||st.name)+' — الأسئلة الحالية: '+(updated?.questions?.length||0);
+    }catch(e){console.error('Gemini save error',e);$('geminiSaveBtn').disabled=false;geminiSetStatus('فشل حفظ الأسئلة: '+(e?.message||e),'err');}
+  }
 
   // 21. Online student auth: Supabase Auth
   window.handleAuth = async function(e){
